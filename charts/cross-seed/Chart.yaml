@@ -35,4 +35,4 @@ sources:
   - https://ghcr.io/cross-seed/cross-seed
   - https://github.com/cross-seed/cross-seed
 type: application
-version: 6.13.5
+version: 6.13.6

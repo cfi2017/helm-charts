@@ -21,6 +21,13 @@ workload:
             - "--"
             - "/usr/local/bin/cross-seed"
             - daemon
+          probes:
+            liveness:
+              type: tcp
+            readiness:
+              type: tcp
+            startup:
+              type: tcp
 
 persistence:
   config:
