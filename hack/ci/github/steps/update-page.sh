@@ -20,7 +20,7 @@ hack/update-readme.sh
 cp --force cfi2017-charts-repo.yaml "$gh_pages_worktree/cfi2017-charts-repo.yaml"
 
 mkdir --parent "$gh_pages_worktree/docs/images"
-cp --force docs/images/lunkwill_helm_shirt.png "$gh_pages_worktree/docs/images/lunkwill_helm_shirt.png"
+# cp --force docs/images/lunkwill_helm_shirt.png "$gh_pages_worktree/docs/images/lunkwill_helm_shirt.png"
 
 pushd "$gh_pages_worktree" > /dev/null
 
