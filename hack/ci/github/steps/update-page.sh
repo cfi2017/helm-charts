@@ -24,7 +24,7 @@ mkdir --parent "$gh_pages_worktree/docs/images"
 
 pushd "$gh_pages_worktree" > /dev/null
 
-git add index.md cfi2017-charts-repo.yaml docs/images/lunkwill_helm_shirt.png
+git add index.md cfi2017-charts-repo.yaml # docs/images/lunkwill_helm_shirt.png
 # abort pages update if no changes detected
 `git diff --cached --quiet` && exit 0
 git commit --message="Update site" --signoff
