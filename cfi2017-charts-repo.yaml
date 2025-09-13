@@ -1,0 +1,8 @@
+apiVersion: helm.openshift.io/v1beta1
+kind: HelmChartRepository
+metadata:
+  name: cfi2017-helm-charts
+spec:
+  name: cfi2017 Helm Charts
+  connectionConfig:
+    url: https://cfi2017.github.io/helm-charts/
