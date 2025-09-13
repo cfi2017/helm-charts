@@ -13,6 +13,43 @@ entries:
       truecharts.org/train: stable
     apiVersion: v2
     appVersion: 6.13.3
+    created: "2025-09-13T08:51:12.585356573Z"
+    dependencies:
+    - name: common
+      repository: oci://oci.trueforge.org/truecharts
+      version: 28.17.1
+    description: cross-seed can be used to spread torrents across multiple indexers
+    digest: 417d94a1722b3a2029239fea0525f61ebc8ae66c194853b9467981b275fccac6
+    home: https://www.cross-seed.org/
+    icon: https://www.cross-seed.org/img/cross-seed.svg
+    keywords:
+    - cross-seed
+    - torrrent
+    kubeVersion: '>=1.24.0-0'
+    maintainers:
+    - email: info@swiss.dev
+      name: cfi2017
+      url: https://github.com/cfi2017
+    name: cross-seed
+    sources:
+    - https://ghcr.io/cross-seed/cross-seed
+    - https://github.com/cross-seed/cross-seed
+    type: application
+    urls:
+    - https://github.com/cfi2017/helm-charts/releases/download/cross-seed-6.13.5/cross-seed-6.13.5.tgz
+    version: 6.13.5
+  - annotations:
+      artifacthub.io/links: |-
+        - name: support
+          url: https://cfi2017.github.io/helm-charts
+      max_scale_version: 24.04.1
+      min_scale_version: 24.04.0
+      truecharts.org/category: media
+      truecharts.org/max_helm_version: "3.17"
+      truecharts.org/min_helm_version: "3.14"
+      truecharts.org/train: stable
+    apiVersion: v2
+    appVersion: 6.13.3
     created: "2025-09-13T08:21:52.78322068Z"
     dependencies:
     - name: common
@@ -115,4 +152,4 @@ entries:
     urls:
     - https://github.com/cfi2017/helm-charts/releases/download/qbittorrent-6.13.3/qbittorrent-6.13.3.tgz
     version: 6.13.3
-generated: "2025-09-13T08:21:52.783233073Z"
+generated: "2025-09-13T08:51:12.585373725Z"
