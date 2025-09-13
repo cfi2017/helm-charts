@@ -1,0 +1,26 @@
+image:
+  repository: ghcr.io/cross-seed/cross-seed
+  pullPolicy: IfNotPresent
+  tag: 6.13.3
+
+service:
+  main:
+    ports:
+      main:
+        port: 2468
+workload:
+  main:
+    podSpec:
+      containers:
+        main:
+          command:
+            - daemon
+
+persistence:
+  config:
+    enabled: true
+    mountPath: "/config"
+    size: 1Gi
+  media:
+    enabled: true
+    mountPath: "/media"
