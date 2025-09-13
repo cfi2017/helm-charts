@@ -3,6 +3,9 @@ image:
   pullPolicy: IfNotPresent
   tag: 6.13.3
 
+fallbackDefaults:
+  probeType: tcp
+
 service:
   main:
     ports:
