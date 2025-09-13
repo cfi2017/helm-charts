@@ -1,0 +1,43 @@
+apiVersion: v1
+entries:
+  qbittorrent:
+  - annotations:
+      artifacthub.io/links: |-
+        - name: support
+          url: https://cfi2017.github.io/helm-charts
+      max_scale_version: 24.04.1
+      min_scale_version: 24.04.0
+      truecharts.org/category: media
+      truecharts.org/max_helm_version: "3.17"
+      truecharts.org/min_helm_version: "3.14"
+      truecharts.org/train: stable
+    apiVersion: v2
+    appVersion: 6.13.3
+    created: "2025-09-13T07:56:56.89416834Z"
+    dependencies:
+    - name: common
+      repository: oci://oci.trueforge.org/truecharts
+      version: 28.17.1
+    description: qBittorrent is a cross-platform free and open-source BitTorrent client
+    digest: 288b9d986b3db3f2e1b7d95787a028f350f0d15f4e79715605f260136cae7e80
+    home: https://truecharts.org/charts/stable/qbittorrent
+    icon: https://truecharts.org/img/hotlink-ok/chart-icons/qbittorrent.webp
+    keywords:
+    - qbittorrent
+    - torrrent
+    kubeVersion: '>=1.24.0-0'
+    maintainers:
+    - email: info@truecharts.org
+      name: TrueCharts
+      url: https://truecharts.org
+    name: qbittorrent
+    sources:
+    - https://ghcr.io/home-operations/qbittorrent
+    - https://github.com/qbittorrent/qBittorrent
+    - https://github.com/truecharts/charts/tree/master/charts/stable/qbittorrent
+    - https://hub.docker.com/r/mjmeli/qbittorrent-port-forward-gluetun-server
+    type: application
+    urls:
+    - https://github.com/cfi2017/helm-charts/releases/download/qbittorrent-6.13.3/qbittorrent-6.13.3.tgz
+    version: 6.13.3
+generated: "2025-09-13T07:56:56.894178739Z"
