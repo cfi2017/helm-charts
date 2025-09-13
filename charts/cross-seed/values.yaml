@@ -14,6 +14,9 @@ workload:
       containers:
         main:
           command:
+            - "/usr/bin/catatonit"
+            - "--"
+            - "/usr/local/bin/cross-seed"
             - daemon
 
 persistence:
