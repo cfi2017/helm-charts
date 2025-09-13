@@ -19,22 +19,20 @@ dependencies:
     tags: []
     import-values: []
 deprecated: false
-description: qBittorrent is a cross-platform free and open-source BitTorrent client
-home: https://truecharts.org/charts/stable/qbittorrent
-icon: https://truecharts.org/img/hotlink-ok/chart-icons/qbittorrent.webp
+description: cross-seed can be used to spread torrents across multiple indexers
+home: https://www.cross-seed.org/
+icon: https://www.cross-seed.org/img/cross-seed.svg
 keywords:
-  - qbittorrent
+  - cross-seed
   - torrrent
 kubeVersion: '>=1.24.0-0'
 maintainers:
-  - name: TrueCharts
-    email: info@truecharts.org
-    url: https://truecharts.org
-name: qbittorrent
+  - name: cfi2017
+    email: info@swiss.dev
+    url: https://github.com/cfi2017
+name: cross-seed
 sources:
-  - https://ghcr.io/home-operations/qbittorrent
-  - https://github.com/qbittorrent/qBittorrent
-  - https://github.com/truecharts/charts/tree/master/charts/stable/qbittorrent
-  - https://hub.docker.com/r/mjmeli/qbittorrent-port-forward-gluetun-server
+  - https://ghcr.io/cross-seed/cross-seed
+  - https://github.com/cross-seed/cross-seed
 type: application
 version: 6.13.3
