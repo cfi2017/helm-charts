@@ -1,0 +1,36 @@
+image:
+  repository: outlinewiki/outline
+  pullPolicy: IfNotPresent
+  tag: 1.0.0-2
+
+fallbackDefaults:
+  probeType: http
+
+service:
+  main:
+    ports:
+      main:
+        port: 3000
+        protocol: http
+
+workload:
+  main:
+    podSpec:
+      containers:
+        main:
+          probes:
+            liveness:
+              type: http
+              path: /
+            readiness:
+              type: http
+              path: /
+            startup:
+              type: http
+              path: /
+
+persistence:
+  data:
+    enabled: true
+    mountPath: "/var/lib/outline/data"
+    size: 1Gi
