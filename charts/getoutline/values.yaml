@@ -21,16 +21,26 @@ workload:
           env:
             # Database configuration
             # When using the included postgresql chart, this will be automatically configured
+            # To use an external secret, override this in your values:
+            # DATABASE_URL:
+            #   secretKeyRef:
+            #     name: my-external-secret
+            #     key: database-url
             DATABASE_URL:
               secretKeyRef:
-                name: '{{ include "tc.v1.common.lib.chart.names.fullname" . }}-db'
-                key: database-url
+                name: '{{ .Values.externalDatabase.existingSecret | default (printf "%s-db" (include "tc.v1.common.lib.chart.names.fullname" .)) }}'
+                key: '{{ .Values.externalDatabase.existingSecretPasswordKey | default "database-url" }}'
             # Redis configuration
             # When using the included redis chart, this will be automatically configured
+            # To use an external secret, override this in your values:
+            # REDIS_URL:
+            #   secretKeyRef:
+            #     name: my-external-secret
+            #     key: redis-url
             REDIS_URL:
               secretKeyRef:
-                name: '{{ include "tc.v1.common.lib.chart.names.fullname" . }}-redis'
-                key: redis-url
+                name: '{{ .Values.externalRedis.existingSecret | default (printf "%s-redis" (include "tc.v1.common.lib.chart.names.fullname" .)) }}'
+                key: '{{ .Values.externalRedis.existingSecretPasswordKey | default "redis-url" }}'
             # S3 Storage Configuration (Optional)
             # Uncomment and configure these to use S3-compatible storage instead of local storage
             # AWS_ACCESS_KEY_ID:
@@ -72,6 +82,12 @@ postgresql:
     username: outline
     password: changeme
     database: outline
+    # Use existing secret for password (optional)
+    # If set, this will override the password above
+    existingSecret: ""
+    # Key in the existing secret that contains the password
+    secretKeys:
+      adminPasswordKey: ""
   primary:
     persistence:
       enabled: true
@@ -83,7 +99,43 @@ redis:
   enabled: true
   auth:
     enabled: false
+    # Use existing secret for password (optional)
+    existingSecret: ""
+    # Key in the existing secret that contains the password
+    existingSecretPasswordKey: ""
   master:
     persistence:
       enabled: true
       size: 1Gi
+
+# External database configuration
+# Use this when postgresql.enabled is false to connect to an external database
+externalDatabase:
+  # Host of the external database
+  host: ""
+  # Port of the external database
+  port: 5432
+  # Database name
+  database: outline
+  # Username
+  username: outline
+  # Password (not recommended, use existingSecret instead)
+  password: ""
+  # Existing secret containing the database password
+  existingSecret: ""
+  # Key in the existing secret that contains the password
+  existingSecretPasswordKey: "password"
+
+# External Redis configuration
+# Use this when redis.enabled is false to connect to an external Redis
+externalRedis:
+  # Host of the external Redis
+  host: ""
+  # Port of the external Redis
+  port: 6379
+  # Password (not recommended, use existingSecret instead)
+  password: ""
+  # Existing secret containing the Redis password
+  existingSecret: ""
+  # Key in the existing secret that contains the password
+  existingSecretPasswordKey: "password"
