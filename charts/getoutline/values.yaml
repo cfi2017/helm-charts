@@ -138,6 +138,14 @@ outline:
     secretKey: "secret-key"
     utilsSecret: "utils-secret"
 
+  # Database configuration
+  database:
+    # Provide a full database connection URL via existing secret
+    # If set, this takes precedence over postgresql/externalDatabase settings
+    # Format: postgres://username:password@host:port/database
+    existingSecret: ""
+    existingSecretKey: "database-url"
+
   # File storage configuration
   storage:
     # Storage backend: local (s3 not supported in this chart yet)

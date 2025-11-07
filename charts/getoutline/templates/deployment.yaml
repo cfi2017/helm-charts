@@ -79,12 +79,10 @@ spec:
             - db:migrate
           env:
             - name: DATABASE_URL
-              value: "postgres://{{ include "getoutline.postgresql.username" . }}:$(DATABASE_PASSWORD)@{{ include "getoutline.postgresql.host" . }}:{{ include "getoutline.postgresql.port" . }}/{{ include "getoutline.postgresql.database" . }}"
-            - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "getoutline.postgresql.secretName" . }}
-                  key: {{ include "getoutline.postgresql.secretKey" . }}
+                  name: {{ .Values.outline.database.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.database.existingSecretKey }}
             - name: REDIS_URL
               value: "redis://{{ include "getoutline.redis.host" . }}:{{ include "getoutline.redis.port" . }}"
             - name: SECRET_KEY
@@ -119,12 +117,10 @@ spec:
               protocol: TCP
           env:
             - name: DATABASE_URL
-              value: "postgres://{{ include "getoutline.postgresql.username" . }}:$(DATABASE_PASSWORD)@{{ include "getoutline.postgresql.host" . }}:{{ include "getoutline.postgresql.port" . }}/{{ include "getoutline.postgresql.database" . }}"
-            - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "getoutline.postgresql.secretName" . }}
-                  key: {{ include "getoutline.postgresql.secretKey" . }}
+                  name: {{ .Values.outline.database.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.database.existingSecretKey }}
             - name: REDIS_URL
               value: "redis://{{ include "getoutline.redis.host" . }}:{{ include "getoutline.redis.port" . }}"
             - name: SECRET_KEY
