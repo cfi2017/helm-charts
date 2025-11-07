@@ -1,0 +1,12 @@
+dependencies:
+- name: common
+  repository: oci://oci.trueforge.org/truecharts
+  version: 28.17.1
+- name: redis
+  repository: oci://registry-1.docker.io/cloudpirates
+  version: 0.13.4
+- name: postgres
+  repository: oci://registry-1.docker.io/cloudpirates
+  version: 0.11.5
+digest: sha256:71482a1b22f8f1529d5ff3f686648d8a3237dbd28c63c16392e03f9c9fc71899
+generated: "2025-11-07T15:30:58.897209108+01:00"

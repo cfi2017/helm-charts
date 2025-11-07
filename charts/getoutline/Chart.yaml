@@ -19,12 +19,13 @@ dependencies:
     tags: []
     import-values: []
   - name: redis
-    version: "~19.0.0"
-    repository: https://cloudpirates.github.io/helm-charts
+    version: "0.13.4"
+    repository: oci://registry-1.docker.io/cloudpirates
     condition: redis.enabled
-  - name: postgresql
-    version: "~15.0.0"
-    repository: https://cloudpirates.github.io/helm-charts
+  - name: postgres
+    alias: postgresql
+    version: "0.11.5"
+    repository: oci://registry-1.docker.io/cloudpirates
     condition: postgresql.enabled
 deprecated: false
 description: The fastest knowledge base for growing teams. Beautiful, realtime collaborative, feature packed, and markdown compatible.
