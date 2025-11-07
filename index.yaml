@@ -156,6 +156,46 @@ entries:
           url: https://cfi2017.github.io/helm-charts
     apiVersion: v2
     appVersion: 1.0.1
+    created: "2025-11-07T16:00:17.906741592Z"
+    dependencies:
+    - condition: redis.enabled
+      name: redis
+      repository: oci://registry-1.docker.io/cloudpirates
+      version: 0.13.4
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: postgres
+      repository: oci://registry-1.docker.io/cloudpirates
+      version: 0.11.5
+    description: The fastest knowledge base for growing teams. Beautiful, realtime
+      collaborative, feature packed, and markdown compatible.
+    digest: 9eef2141f12861e842dde70054f722855d9f3336e1a5dd5305039bfa87150831
+    home: https://www.getoutline.com/
+    icon: https://raw.githubusercontent.com/outline/outline/main/public/images/icon-192.png
+    keywords:
+    - outline
+    - wiki
+    - knowledge-base
+    - documentation
+    kubeVersion: '>=1.24.0-0'
+    maintainers:
+    - email: info@swiss.dev
+      name: cfi2017
+      url: https://github.com/cfi2017
+    name: getoutline
+    sources:
+    - https://hub.docker.com/r/outlinewiki/outline
+    - https://github.com/outline/outline
+    type: application
+    urls:
+    - https://github.com/cfi2017/helm-charts/releases/download/getoutline-1.2.0/getoutline-1.2.0.tgz
+    version: 1.2.0
+  - annotations:
+      artifacthub.io/links: |-
+        - name: support
+          url: https://cfi2017.github.io/helm-charts
+    apiVersion: v2
+    appVersion: 1.0.1
     created: "2025-11-07T15:54:31.583059875Z"
     dependencies:
     - condition: redis.enabled
@@ -399,4 +439,4 @@ entries:
     urls:
     - https://github.com/cfi2017/helm-charts/releases/download/qbittorrent-6.13.3/qbittorrent-6.13.3.tgz
     version: 6.13.3
-generated: "2025-11-07T15:54:31.58308892Z"
+generated: "2025-11-07T16:00:17.906772961Z"
