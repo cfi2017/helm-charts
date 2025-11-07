@@ -1,91 +1,260 @@
+# Outline application configuration
 image:
   repository: outlinewiki/outline
   pullPolicy: IfNotPresent
-  tag: 1.0.0-2
+  tag: ""  # Defaults to Chart appVersion
 
-fallbackDefaults:
-  probeType: http
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
 
+# Number of Outline replicas
+replicaCount: 1
+
+# Service configuration
 service:
-  main:
-    ports:
-      main:
-        port: 3000
-        protocol: http
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations: {}
 
-workload:
-  main:
-    podSpec:
-      containers:
-        main:
-          env:
-            # Database configuration
-            # When using the included postgresql chart, this will be automatically configured
-            # To use an external secret, override this in your values:
-            # DATABASE_URL:
-            #   secretKeyRef:
-            #     name: my-external-secret
-            #     key: database-url
-            DATABASE_URL:
-              secretKeyRef:
-                name: '{{ .Values.externalDatabase.existingSecret | default (printf "%s-db" (include "tc.v1.common.lib.chart.names.fullname" .)) }}'
-                key: '{{ .Values.externalDatabase.existingSecretPasswordKey | default "database-url" }}'
-            # Redis configuration
-            # When using the included redis chart, this will be automatically configured
-            # To use an external secret, override this in your values:
-            # REDIS_URL:
-            #   secretKeyRef:
-            #     name: my-external-secret
-            #     key: redis-url
-            REDIS_URL:
-              secretKeyRef:
-                name: '{{ .Values.externalRedis.existingSecret | default (printf "%s-redis" (include "tc.v1.common.lib.chart.names.fullname" .)) }}'
-                key: '{{ .Values.externalRedis.existingSecretPasswordKey | default "redis-url" }}'
-            # S3 Storage Configuration (Optional)
-            # Uncomment and configure these to use S3-compatible storage instead of local storage
-            # AWS_ACCESS_KEY_ID:
-            #   secretKeyRef:
-            #     name: '{{ include "tc.v1.common.lib.chart.names.fullname" . }}-s3'
-            #     key: access-key-id
-            # AWS_SECRET_ACCESS_KEY:
-            #   secretKeyRef:
-            #     name: '{{ include "tc.v1.common.lib.chart.names.fullname" . }}-s3'
-            #     key: secret-access-key
-            # AWS_REGION: us-east-1
-            # AWS_S3_UPLOAD_BUCKET_URL: https://s3.amazonaws.com
-            # AWS_S3_UPLOAD_BUCKET_NAME: outline-bucket
-            # AWS_S3_UPLOAD_MAX_SIZE: "26214400"
-            # AWS_S3_FORCE_PATH_STYLE: "false"
-            # AWS_S3_ACL: private
-          probes:
-            liveness:
-              type: http
-              path: /
-            readiness:
-              type: http
-              path: /
-            startup:
-              type: http
-              path: /
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/proxy-body-size: 256m
+  hosts:
+    - host: outline.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: outline-tls
+    #   hosts:
+    #     - outline.example.com
 
-persistence:
-  data:
+# Resource limits and requests
+resources: {}
+  # limits:
+  #   cpu: 1000m
+  #   memory: 1Gi
+  # requests:
+  #   cpu: 500m
+  #   memory: 512Mi
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1001
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Node selection
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Liveness probe configuration
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /_health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+  successThreshold: 1
+
+# Readiness probe configuration
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /_health
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
+
+# Outline application configuration
+outline:
+  # Public URL where Outline will be accessible
+  # This is required and must be set
+  url: ""
+
+  # Port the application runs on (internal)
+  port: 3000
+
+  # Default language
+  defaultLanguage: en_US
+
+  # Force HTTPS (recommended for production)
+  forceHttps: true
+
+  # Enable debugging
+  debug: false
+
+  # Secret keys for encryption and signing
+  # If not provided, random keys will be generated
+  # Generate with: openssl rand -hex 32
+  secretKey: ""
+  utilsSecret: ""
+
+  # Use existing secret for sensitive configuration
+  # If set, this will override secretKey and utilsSecret above
+  existingSecret: ""
+  existingSecretKeys:
+    secretKey: "secret-key"
+    utilsSecret: "utils-secret"
+
+  # File storage configuration
+  storage:
+    # Storage backend: local (s3 not supported in this chart yet)
+    backend: local
+    # Maximum file upload size in bytes (default: 256MB)
+    uploadMaxSize: 262144000
+    # Maximum import file size in bytes
+    importMaxSize: 262144000
+    # Local storage persistence
+    persistence:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 10Gi
+      # existingClaim: ""
+
+  # OIDC Authentication configuration
+  oidc:
+    enabled: false
+    # Display name for the OIDC provider
+    displayName: "OpenID Connect"
+    # Client ID from your OIDC provider
+    clientId: ""
+    # Client secret from your OIDC provider
+    clientSecret: ""
+    # Authorization endpoint URL
+    authUri: ""
+    # Token endpoint URL
+    tokenUri: ""
+    # UserInfo endpoint URL
+    userInfoUri: ""
+    # Username claim (default: preferred_username)
+    usernameClaim: preferred_username
+    # Scopes to request (space-separated)
+    scopes: "openid profile email"
+    # Use existing secret for OIDC credentials
+    existingSecret: ""
+    existingSecretKeys:
+      clientId: "oidc-client-id"
+      clientSecret: "oidc-client-secret"
+
+  # Slack authentication (optional)
+  slack:
+    enabled: false
+    clientId: ""
+    clientSecret: ""
+    existingSecret: ""
+    existingSecretKeys:
+      clientId: "slack-client-id"
+      clientSecret: "slack-client-secret"
+
+  # Google authentication (optional)
+  google:
+    enabled: false
+    clientId: ""
+    clientSecret: ""
+    existingSecret: ""
+    existingSecretKeys:
+      clientId: "google-client-id"
+      clientSecret: "google-client-secret"
+
+  # Azure AD authentication (optional)
+  azure:
+    enabled: false
+    clientId: ""
+    clientSecret: ""
+    resourceAppId: ""
+    existingSecret: ""
+    existingSecretKeys:
+      clientId: "azure-client-id"
+      clientSecret: "azure-client-secret"
+
+  # SMTP configuration for email notifications
+  smtp:
+    enabled: false
+    host: ""
+    port: 587
+    username: ""
+    password: ""
+    fromEmail: ""
+    replyEmail: ""
+    tlsCiphers: ""
+    secure: true
+    existingSecret: ""
+    existingSecretKeys:
+      username: "smtp-username"
+      password: "smtp-password"
+
+  # Collaboration and document settings
+  collaboration:
+    # Maximum import size for collaborative documents
+    maxImportSize: 5242880
+
+  # Rate limiting
+  rateLimiter:
     enabled: true
-    mountPath: "/var/lib/outline/data"
-    size: 1Gi
+    requests: 1000
+    durationWindow: 60
+
+  # Additional environment variables
+  extraEnv: []
+    # - name: CUSTOM_VAR
+    #   value: "custom-value"
+
+  # Additional environment variables from secrets/configmaps
+  extraEnvFrom: []
+    # - secretRef:
+    #     name: my-secret
 
 # PostgreSQL dependency configuration
-# Set enabled to false if you want to use an external PostgreSQL instance
 postgresql:
   enabled: true
   auth:
     username: outline
     password: changeme
     database: outline
-    # Use existing secret for password (optional)
-    # If set, this will override the password above
     existingSecret: ""
-    # Key in the existing secret that contains the password
     secretKeys:
       adminPasswordKey: ""
   primary:
@@ -94,14 +263,11 @@ postgresql:
       size: 8Gi
 
 # Redis dependency configuration
-# Set enabled to false if you want to use an external Redis instance
 redis:
   enabled: true
   auth:
     enabled: false
-    # Use existing secret for password (optional)
     existingSecret: ""
-    # Key in the existing secret that contains the password
     existingSecretPasswordKey: ""
   master:
     persistence:
@@ -109,33 +275,19 @@ redis:
       size: 1Gi
 
 # External database configuration
-# Use this when postgresql.enabled is false to connect to an external database
 externalDatabase:
-  # Host of the external database
   host: ""
-  # Port of the external database
   port: 5432
-  # Database name
   database: outline
-  # Username
   username: outline
-  # Password (not recommended, use existingSecret instead)
   password: ""
-  # Existing secret containing the database password
   existingSecret: ""
-  # Key in the existing secret that contains the password
   existingSecretPasswordKey: "password"
 
 # External Redis configuration
-# Use this when redis.enabled is false to connect to an external Redis
 externalRedis:
-  # Host of the external Redis
   host: ""
-  # Port of the external Redis
   port: 6379
-  # Password (not recommended, use existingSecret instead)
   password: ""
-  # Existing secret containing the Redis password
   existingSecret: ""
-  # Key in the existing secret that contains the password
   existingSecretPasswordKey: "password"

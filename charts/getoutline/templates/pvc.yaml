@@ -1,0 +1,21 @@
+{{- if and .Values.outline.storage.persistence.enabled (not .Values.outline.storage.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "getoutline.fullname" . }}-storage
+  labels:
+    {{- include "getoutline.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.outline.storage.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.outline.storage.persistence.size | quote }}
+  {{- if .Values.outline.storage.persistence.storageClass }}
+  {{- if eq "-" .Values.outline.storage.persistence.storageClass }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.outline.storage.persistence.storageClass | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

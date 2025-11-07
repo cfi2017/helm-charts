@@ -2,22 +2,9 @@ annotations:
   artifacthub.io/links: |-
     - name: support
       url: https://cfi2017.github.io/helm-charts
-  max_scale_version: 24.04.1
-  min_scale_version: 24.04.0
-  truecharts.org/category: productivity
-  truecharts.org/max_helm_version: "3.17"
-  truecharts.org/min_helm_version: "3.14"
-  truecharts.org/train: stable
 apiVersion: v2
 appVersion: 1.0.0-2
 dependencies:
-  - name: common
-    version: 28.17.1
-    repository: oci://oci.trueforge.org/truecharts
-    condition: ""
-    alias: ""
-    tags: []
-    import-values: []
   - name: redis
     version: "0.13.4"
     repository: oci://registry-1.docker.io/cloudpirates
@@ -46,4 +33,4 @@ sources:
   - https://hub.docker.com/r/outlinewiki/outline
   - https://github.com/outline/outline
 type: application
-version: 1.0.0
+version: 1.0.1

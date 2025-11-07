@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "getoutline.fullname" . }}
+  labels:
+    {{- include "getoutline.labels" . | nindent 4 }}
+data:
+  NODE_ENV: "production"
+  {{- if .Values.outline.url }}
+  URL: {{ .Values.outline.url | quote }}
+  {{- end }}
+  PORT: {{ .Values.outline.port | quote }}
+  DEFAULT_LANGUAGE: {{ .Values.outline.defaultLanguage | quote }}
+  {{- if .Values.outline.forceHttps }}
+  FORCE_HTTPS: "true"
+  {{- end }}
+  {{- if .Values.outline.debug }}
+  DEBUG: "cache,presenters,events,emails,mailer,utils,http,server,services"
+  {{- end }}
+
+  # Storage configuration
+  FILE_STORAGE: {{ .Values.outline.storage.backend | quote }}
+  {{- if eq .Values.outline.storage.backend "local" }}
+  FILE_STORAGE_LOCAL_ROOT_DIR: {{ include "getoutline.storagePath" . | quote }}
+  {{- end }}
+  FILE_STORAGE_UPLOAD_MAX_SIZE: {{ .Values.outline.storage.uploadMaxSize | quote }}
+  {{- if .Values.outline.storage.importMaxSize }}
+  FILE_STORAGE_IMPORT_MAX_SIZE: {{ .Values.outline.storage.importMaxSize | quote }}
+  {{- end }}
+
+  # OIDC configuration
+  {{- if .Values.outline.oidc.enabled }}
+  OIDC_DISPLAY_NAME: {{ .Values.outline.oidc.displayName | quote }}
+  OIDC_AUTH_URI: {{ .Values.outline.oidc.authUri | quote }}
+  OIDC_TOKEN_URI: {{ .Values.outline.oidc.tokenUri | quote }}
+  OIDC_USERINFO_URI: {{ .Values.outline.oidc.userInfoUri | quote }}
+  OIDC_USERNAME_CLAIM: {{ .Values.outline.oidc.usernameClaim | quote }}
+  OIDC_SCOPES: {{ .Values.outline.oidc.scopes | quote }}
+  {{- end }}
+
+  # Azure configuration
+  {{- if .Values.outline.azure.enabled }}
+  AZURE_RESOURCE_APP_ID: {{ .Values.outline.azure.resourceAppId | quote }}
+  {{- end }}
+
+  # SMTP configuration
+  {{- if .Values.outline.smtp.enabled }}
+  SMTP_HOST: {{ .Values.outline.smtp.host | quote }}
+  SMTP_PORT: {{ .Values.outline.smtp.port | quote }}
+  SMTP_FROM_EMAIL: {{ .Values.outline.smtp.fromEmail | quote }}
+  {{- if .Values.outline.smtp.replyEmail }}
+  SMTP_REPLY_EMAIL: {{ .Values.outline.smtp.replyEmail | quote }}
+  {{- end }}
+  {{- if .Values.outline.smtp.tlsCiphers }}
+  SMTP_TLS_CIPHERS: {{ .Values.outline.smtp.tlsCiphers | quote }}
+  {{- end }}
+  {{- if .Values.outline.smtp.secure }}
+  SMTP_SECURE: "true"
+  {{- end }}
+  {{- end }}
+
+  # Rate limiting
+  {{- if .Values.outline.rateLimiter.enabled }}
+  RATE_LIMITER_ENABLED: "true"
+  RATE_LIMITER_REQUESTS: {{ .Values.outline.rateLimiter.requests | quote }}
+  RATE_LIMITER_DURATION_WINDOW: {{ .Values.outline.rateLimiter.durationWindow | quote }}
+  {{- end }}
+
+  # Collaboration settings
+  {{- if .Values.outline.collaboration.maxImportSize }}
+  MAXIMUM_IMPORT_SIZE: {{ .Values.outline.collaboration.maxImportSize | quote }}
+  {{- end }}

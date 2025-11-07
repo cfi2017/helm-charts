@@ -1,0 +1,249 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "getoutline.fullname" . }}
+  labels:
+    {{- include "getoutline.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "getoutline.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "getoutline.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "getoutline.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "getoutline.postgresql.host" . }} {{ include "getoutline.postgresql.port" . }}; do
+                echo "Waiting for PostgreSQL..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1001
+        - name: wait-for-redis
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "getoutline.redis.host" . }} {{ include "getoutline.redis.port" . }}; do
+                echo "Waiting for Redis..."
+                sleep 2
+              done
+              echo "Redis is ready"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1001
+        - name: db-migrate
+          image: {{ include "getoutline.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - yarn
+            - db:migrate
+          env:
+            - name: DATABASE_URL
+              value: "postgres://{{ include "getoutline.postgresql.username" . }}:$(DATABASE_PASSWORD)@{{ include "getoutline.postgresql.host" . }}:{{ include "getoutline.postgresql.port" . }}/{{ include "getoutline.postgresql.database" . }}"
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "getoutline.postgresql.secretName" . }}
+                  key: {{ include "getoutline.postgresql.secretKey" . }}
+            - name: REDIS_URL
+              value: "redis://{{ include "getoutline.redis.host" . }}:{{ include "getoutline.redis.port" . }}"
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "getoutline.secretName" . }}
+                  key: {{ .Values.outline.existingSecretKeys.secretKey }}
+            - name: UTILS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "getoutline.secretName" . }}
+                  key: {{ .Values.outline.existingSecretKeys.utilsSecret }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "getoutline.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /.cache
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "getoutline.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.outline.port }}
+              protocol: TCP
+          env:
+            - name: DATABASE_URL
+              value: "postgres://{{ include "getoutline.postgresql.username" . }}:$(DATABASE_PASSWORD)@{{ include "getoutline.postgresql.host" . }}:{{ include "getoutline.postgresql.port" . }}/{{ include "getoutline.postgresql.database" . }}"
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "getoutline.postgresql.secretName" . }}
+                  key: {{ include "getoutline.postgresql.secretKey" . }}
+            - name: REDIS_URL
+              value: "redis://{{ include "getoutline.redis.host" . }}:{{ include "getoutline.redis.port" . }}"
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "getoutline.secretName" . }}
+                  key: {{ .Values.outline.existingSecretKeys.secretKey }}
+            - name: UTILS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "getoutline.secretName" . }}
+                  key: {{ .Values.outline.existingSecretKeys.utilsSecret }}
+            {{- if .Values.outline.oidc.enabled }}
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.oidc.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.oidc.existingSecretKeys.clientId }}
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.oidc.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.oidc.existingSecretKeys.clientSecret }}
+            {{- end }}
+            {{- if .Values.outline.slack.enabled }}
+            - name: SLACK_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.slack.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.slack.existingSecretKeys.clientId }}
+            - name: SLACK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.slack.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.slack.existingSecretKeys.clientSecret }}
+            {{- end }}
+            {{- if .Values.outline.google.enabled }}
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.google.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.google.existingSecretKeys.clientId }}
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.google.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.google.existingSecretKeys.clientSecret }}
+            {{- end }}
+            {{- if .Values.outline.azure.enabled }}
+            - name: AZURE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.azure.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.azure.existingSecretKeys.clientId }}
+            - name: AZURE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.azure.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.azure.existingSecretKeys.clientSecret }}
+            {{- end }}
+            {{- if .Values.outline.smtp.enabled }}
+            - name: SMTP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.smtp.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.smtp.existingSecretKeys.username }}
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.outline.smtp.existingSecret | default (include "getoutline.fullname" .) }}
+                  key: {{ .Values.outline.smtp.existingSecretKeys.password }}
+            {{- end }}
+            {{- with .Values.outline.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "getoutline.fullname" . }}
+            {{- with .Values.outline.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- if and (eq .Values.outline.storage.backend "local") .Values.outline.storage.persistence.enabled }}
+            - name: storage
+              mountPath: {{ include "getoutline.storagePath" . }}
+            {{- end }}
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /.cache
+      volumes:
+        {{- if and (eq .Values.outline.storage.backend "local") .Values.outline.storage.persistence.enabled }}
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.outline.storage.persistence.existingClaim | default (printf "%s-storage" (include "getoutline.fullname" .)) }}
+        {{- end }}
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
