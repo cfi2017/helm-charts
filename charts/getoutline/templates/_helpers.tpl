@@ -157,7 +157,7 @@ Redis host
 */}}
 {{- define "getoutline.redis.host" -}}
 {{- if .Values.redis.enabled }}
-{{- printf "%s-redis-master" .Release.Name }}
+{{- printf "%s-redis" .Release.Name }}
 {{- else }}
 {{- .Values.externalRedis.host }}
 {{- end }}

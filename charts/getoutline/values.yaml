@@ -247,6 +247,17 @@ outline:
     # - secretRef:
     #     name: my-secret
 
+  # Additional volumes to add to the pod
+  extraVolumes: []
+    # - name: custom-volume
+    #   configMap:
+    #     name: my-configmap
+
+  # Additional volume mounts to add to the container
+  extraVolumeMounts: []
+    # - name: custom-volume
+    #   mountPath: /etc/custom
+
 # PostgreSQL dependency configuration
 postgresql:
   enabled: true

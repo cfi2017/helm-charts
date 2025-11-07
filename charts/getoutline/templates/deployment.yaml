@@ -225,6 +225,9 @@ spec:
               mountPath: /tmp
             - name: cache
               mountPath: /.cache
+            {{- with .Values.outline.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       volumes:
         {{- if and (eq .Values.outline.storage.backend "local") .Values.outline.storage.persistence.enabled }}
         - name: storage
@@ -235,6 +238,9 @@ spec:
           emptyDir: {}
         - name: cache
           emptyDir: {}
+        {{- with .Values.outline.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
