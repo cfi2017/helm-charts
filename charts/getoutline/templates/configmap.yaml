@@ -31,9 +31,13 @@ data:
   # OIDC configuration
   {{- if .Values.outline.oidc.enabled }}
   OIDC_DISPLAY_NAME: {{ .Values.outline.oidc.displayName | quote }}
+  {{- if .Values.outline.oidc.issuerUri }}
+  OIDC_ISSUER_URI: {{ .Values.outline.oidc.issuerUri | quote }}
+  {{- else }}
   OIDC_AUTH_URI: {{ .Values.outline.oidc.authUri | quote }}
   OIDC_TOKEN_URI: {{ .Values.outline.oidc.tokenUri | quote }}
   OIDC_USERINFO_URI: {{ .Values.outline.oidc.userInfoUri | quote }}
+  {{- end }}
   OIDC_USERNAME_CLAIM: {{ .Values.outline.oidc.usernameClaim | quote }}
   OIDC_SCOPES: {{ .Values.outline.oidc.scopes | quote }}
   {{- end }}

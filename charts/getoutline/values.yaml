@@ -171,11 +171,15 @@ outline:
     clientId: ""
     # Client secret from your OIDC provider
     clientSecret: ""
-    # Authorization endpoint URL
+    # OIDC issuer URI for auto-discovery (e.g., https://accounts.google.com)
+    # If set, this enables auto-discovery of auth/token/userinfo endpoints
+    # and takes precedence over manually specified URIs below
+    issuerUri: ""
+    # Authorization endpoint URL (not needed if issuerUri is set)
     authUri: ""
-    # Token endpoint URL
+    # Token endpoint URL (not needed if issuerUri is set)
     tokenUri: ""
-    # UserInfo endpoint URL
+    # UserInfo endpoint URL (not needed if issuerUri is set)
     userInfoUri: ""
     # Username claim (default: preferred_username)
     usernameClaim: preferred_username
