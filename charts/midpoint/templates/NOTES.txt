@@ -1,0 +1,21 @@
+MidPoint has been deployed.
+
+{{- if .Values.ingress.enabled }}
+Access MidPoint via:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}/midpoint
+{{- end }}
+{{- else if .Values.httpRoute.enabled }}
+Access MidPoint via:
+{{- range .Values.httpRoute.hostnames }}
+  https://{{ . }}/midpoint
+{{- end }}
+{{- else }}
+MidPoint is not exposed externally. Forward port 8080 to access it locally:
+
+  kubectl port-forward svc/{{ include "midpoint.fullname" . }} 8080:8080
+
+Then open http://localhost:8080/midpoint
+{{- end }}
+
+Default credentials: administrator / {{ .Values.midpoint.adminPassword | default "<see your existingSecret>" }}
