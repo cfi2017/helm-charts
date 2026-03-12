@@ -1,0 +1,103 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "midpoint.fullname" . }}-db-init
+  labels:
+    {{- include "midpoint.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "0"
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "midpoint.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: db-init
+    spec:
+      restartPolicy: OnFailure
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "midpoint.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "midpoint.postgresql.host" . }} {{ include "midpoint.postgresql.port" . }}; do
+                echo "Waiting for PostgreSQL at {{ include "midpoint.postgresql.host" . }}:{{ include "midpoint.postgresql.port" . }}..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+      containers:
+        - name: db-init
+          image: {{ include "midpoint.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              cd /opt/midpoint
+              bin/midpoint.sh init-native
+              echo '---'
+              bin/ninja.sh -B info >/dev/null 2>/tmp/ninja.log || true
+              if grep -q "ERROR" /tmp/ninja.log; then
+                echo 'Initializing repository schema...'
+                bin/ninja.sh run-sql --create --mode REPOSITORY
+                bin/ninja.sh run-sql --create --mode AUDIT
+              else
+                echo 'Repository init is not needed...'
+              fi
+          env:
+            - name: MP_INIT_CFG
+              value: /opt/midpoint/var
+            - name: MP_SET_midpoint_repository_database
+              value: postgresql
+            - name: MP_SET_midpoint_repository_jdbcUrl
+              value: {{ include "midpoint.jdbcUrl" . | quote }}
+            - name: MP_SET_midpoint_repository_jdbcUsername
+              value: {{ include "midpoint.postgresql.username" . | quote }}
+            - name: MP_SET_midpoint_repository_jdbcPassword_FILE
+              value: /opt/midpoint/config-secrets/database-password
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: midpoint-home
+              mountPath: /opt/midpoint/var
+            - name: db-pass
+              mountPath: /opt/midpoint/config-secrets
+              readOnly: true
+      volumes:
+        - name: midpoint-home
+          emptyDir: {}
+        - name: db-pass
+          secret:
+            secretName: {{ include "midpoint.postgresql.secretName" . }}
+            items:
+              - key: {{ include "midpoint.postgresql.secretKey" . }}
+                path: database-password
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

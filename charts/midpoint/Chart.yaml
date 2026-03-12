@@ -31,4 +31,4 @@ sources:
   - https://hub.docker.com/r/evolveum/midpoint
   - https://github.com/evolveum/midpoint
 type: application
-version: 0.1.2
+version: 0.1.3
