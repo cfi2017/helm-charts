@@ -1,0 +1,17 @@
+midpoint:
+  adminPassword: Test5ecr3t
+  home:
+    persistence:
+      enabled: false
+
+# Disable probes — midpoint is a heavy Java app that takes several minutes
+# to start; ct install on kind would time out waiting for them.
+livenessProbe:
+  enabled: false
+readinessProbe:
+  enabled: false
+
+postgresql:
+  primary:
+    persistence:
+      size: 1Gi

@@ -13,13 +13,11 @@ jobs:
 
     - name: Set up Helm
       uses: azure/setup-helm@v4
-      with:
-        version: v3.14.0
 
     - name: install helm unittest
       run: |
         helm env
-        helm plugin install https://github.com/helm-unittest/helm-unittest
+        helm plugin install https://github.com/helm-unittest/helm-unittest --verify=false
 
     - uses: actions/setup-python@v5
       with:
@@ -47,13 +45,11 @@ jobs:
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
-        with:
-          version: v3.14.0
 
       - name: install helm unittest
         run: |
           helm env
-          helm plugin install https://github.com/helm-unittest/helm-unittest
+          helm plugin install https://github.com/helm-unittest/helm-unittest --verify=false
 
       - uses: actions/setup-python@v5
         with:

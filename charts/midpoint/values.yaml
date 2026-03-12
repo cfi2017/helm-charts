@@ -1,0 +1,186 @@
+image:
+  repository: evolveum/midpoint
+  pullPolicy: IfNotPresent
+  tag: ""  # Defaults to Chart appVersion
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Number of MidPoint replicas.
+# Setting >1 automatically enables clustered mode (MP_SET_midpoint_taskManager_clustered=true).
+replicaCount: 1
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+  # Session affinity is enabled by default (required for clustered deployments)
+  sessionAffinity: ClientIP
+  sessionAffinityTimeoutSeconds: 10800
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-name: midpoint
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+  hosts:
+    - host: midpoint.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: midpoint-tls
+  #    hosts:
+  #      - midpoint.example.com
+
+# HTTPRoute configuration (Gateway API)
+httpRoute:
+  enabled: false
+  annotations: {}
+  parentRefs:
+    - name: my-gateway
+      namespace: default
+      # sectionName: https
+  hostnames:
+    - midpoint.example.com
+  # Session persistence via Gateway API v1.1+ SessionPersistence (requires compatible gateway)
+  sessionPersistence:
+    enabled: true
+    sessionName: midpoint
+    type: Cookie       # Cookie or Header
+    absoluteTimeout: 48h
+    # idleTimeout: 1h
+
+# Resource limits and requests
+resources: {}
+  # limits:
+  #   cpu: 2000m
+  #   memory: 2Gi
+  # requests:
+  #   cpu: 500m
+  #   memory: 1Gi
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+
+# Container security context
+securityContext: {}
+  # allowPrivilegeEscalation: false
+  # capabilities:
+  #   drop:
+  #     - ALL
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Node selection
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Pod annotations and labels
+podAnnotations: {}
+podLabels: {}
+
+# Liveness probe
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /midpoint/actuator/health/liveness
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 6
+  successThreshold: 1
+
+# Readiness probe
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /midpoint/actuator/health/readiness
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# MidPoint application configuration
+midpoint:
+  # Initial administrator password.
+  # Required on first install. Must meet MidPoint password policy (min 5 chars).
+  adminPassword: ""
+
+  # Use an existing secret instead of creating one.
+  # The secret must contain the keys defined in existingSecretKeys below.
+  existingSecret: ""
+  existingSecretKeys:
+    adminPassword: "admin-password"
+    databasePassword: "database-password"
+
+  # MidPoint home directory persistence (/opt/midpoint/var)
+  home:
+    persistence:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 128Mi
+      # existingClaim: ""  # only used when replicaCount=1
+
+  # Additional environment variables
+  extraEnv: []
+  #  - name: MP_SET_midpoint_keystore_keyStorePath
+  #    value: /opt/secret-volume/keystore.jceks
+
+  # Additional environment variables from secrets/configmaps
+  extraEnvFrom: []
+
+  # Additional volumes
+  extraVolumes: []
+
+  # Additional volume mounts
+  extraVolumeMounts: []
+
+# PostgreSQL dependency configuration
+postgresql:
+  enabled: true
+  auth:
+    username: midpoint
+    password: changeme
+    database: midpoint
+    existingSecret: ""
+    secretKeys:
+      adminPasswordKey: ""
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi
+
+# External database configuration (used when postgresql.enabled=false)
+externalDatabase:
+  host: ""
+  port: 5432
+  database: midpoint
+  username: midpoint
+  password: ""
+  existingSecret: ""
+  existingSecretPasswordKey: "password"

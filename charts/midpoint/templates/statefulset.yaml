@@ -1,0 +1,187 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "midpoint.fullname" . }}
+  labels:
+    {{- include "midpoint.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  serviceName: {{ include "midpoint.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "midpoint.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "midpoint.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "midpoint.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "midpoint.postgresql.host" . }} {{ include "midpoint.postgresql.port" . }}; do
+                echo "Waiting for PostgreSQL at {{ include "midpoint.postgresql.host" . }}:{{ include "midpoint.postgresql.port" . }}..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+        - name: midpoint-init
+          image: {{ include "midpoint.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - /opt/midpoint/bin/midpoint.sh
+            - init-native
+          env:
+            - name: MP_INIT_CFG
+              value: /opt/midpoint/var
+            - name: MP_SET_midpoint_repository_database
+              value: postgresql
+            - name: MP_SET_midpoint_repository_jdbcUrl
+              value: {{ include "midpoint.jdbcUrl" . | quote }}
+            - name: MP_SET_midpoint_repository_jdbcUsername
+              value: {{ include "midpoint.postgresql.username" . | quote }}
+            - name: MP_SET_midpoint_repository_jdbcPassword_FILE
+              value: /opt/midpoint/config-secrets/database-password
+            - name: MP_UNSET_midpoint_repository_hibernateHbm2ddl
+              value: "1"
+          volumeMounts:
+            - name: midpoint-home
+              mountPath: /opt/midpoint/var
+            - name: db-pass
+              mountPath: /opt/midpoint/config-secrets
+              readOnly: true
+      containers:
+        - name: midpoint
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "midpoint.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MP_SET_midpoint_repository_database
+              value: postgresql
+            - name: MP_SET_midpoint_repository_jdbcUrl
+              value: {{ include "midpoint.jdbcUrl" . | quote }}
+            - name: MP_SET_midpoint_repository_jdbcUsername
+              value: {{ include "midpoint.postgresql.username" . | quote }}
+            - name: MP_SET_midpoint_repository_jdbcPassword_FILE
+              value: /opt/midpoint/config-secrets/database-password
+            - name: MP_SET_midpoint_administrator_initialPassword
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "midpoint.secretName" . }}
+                  key: {{ .Values.midpoint.existingSecretKeys.adminPassword }}
+            - name: MP_UNSET_midpoint_repository_hibernateHbm2ddl
+              value: "1"
+            - name: MP_NO_ENV_COMPAT
+              value: "1"
+            {{- if gt (int .Values.replicaCount) 1 }}
+            - name: MP_SET_midpoint_taskManager_clustered
+              value: "true"
+            - name: MP_SET_midpoint_nodeIdSource
+              value: hostname
+            {{- end }}
+            {{- with .Values.midpoint.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.midpoint.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: midpoint-home
+              mountPath: /opt/midpoint/var
+            - name: db-pass
+              mountPath: /opt/midpoint/config-secrets
+              readOnly: true
+            {{- with .Values.midpoint.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: db-pass
+          secret:
+            secretName: {{ include "midpoint.postgresql.secretName" . }}
+            items:
+              - key: {{ include "midpoint.postgresql.secretKey" . }}
+                path: database-password
+        {{- if and .Values.midpoint.home.persistence.enabled .Values.midpoint.home.persistence.existingClaim }}
+        - name: midpoint-home
+          persistentVolumeClaim:
+            claimName: {{ .Values.midpoint.home.persistence.existingClaim }}
+        {{- else if not .Values.midpoint.home.persistence.enabled }}
+        - name: midpoint-home
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.midpoint.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- if and .Values.midpoint.home.persistence.enabled (not .Values.midpoint.home.persistence.existingClaim) }}
+  volumeClaimTemplates:
+    - metadata:
+        name: midpoint-home
+      spec:
+        accessModes:
+          - {{ .Values.midpoint.home.persistence.accessMode | quote }}
+        {{- if .Values.midpoint.home.persistence.storageClass }}
+        storageClassName: {{ .Values.midpoint.home.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.midpoint.home.persistence.size | quote }}
+  {{- end }}
