@@ -121,16 +121,12 @@ Name of the secret containing the database password
 {{- if .Values.postgresql.enabled }}
 {{- if .Values.postgresql.auth.existingSecret }}
 {{- .Values.postgresql.auth.existingSecret }}
-{{- else if .Values.midpoint.existingSecret }}
-{{- .Values.midpoint.existingSecret }}
 {{- else }}
 {{- include "midpoint.fullname" . }}
 {{- end }}
 {{- else }}
 {{- if .Values.externalDatabase.existingSecret }}
 {{- .Values.externalDatabase.existingSecret }}
-{{- else if .Values.midpoint.existingSecret }}
-{{- .Values.midpoint.existingSecret }}
 {{- else }}
 {{- include "midpoint.fullname" . }}
 {{- end }}
@@ -144,16 +140,12 @@ Key within the database password secret
 {{- if .Values.postgresql.enabled }}
 {{- if .Values.postgresql.auth.existingSecret }}
 {{- .Values.postgresql.auth.secretKeys.adminPasswordKey }}
-{{- else if .Values.midpoint.existingSecret }}
-{{- .Values.midpoint.existingSecretKeys.databasePassword }}
 {{- else }}
 {{- print "database-password" }}
 {{- end }}
 {{- else }}
 {{- if .Values.externalDatabase.existingSecret }}
 {{- .Values.externalDatabase.existingSecretPasswordKey }}
-{{- else if .Values.midpoint.existingSecret }}
-{{- .Values.midpoint.existingSecretKeys.databasePassword }}
 {{- else }}
 {{- print "database-password" }}
 {{- end }}
