@@ -130,12 +130,13 @@ midpoint:
   # Required on first install. Must meet MidPoint password policy (min 5 chars).
   adminPassword: ""
 
-  # Use an existing secret instead of creating one.
-  # The secret must contain the keys defined in existingSecretKeys below.
+  # Use an existing secret for the admin password instead of creating one.
+  # The secret must contain the key defined in existingSecretKeys.adminPassword.
+  # The database password is sourced independently via postgresql.auth.existingSecret
+  # or externalDatabase.existingSecret.
   existingSecret: ""
   existingSecretKeys:
     adminPassword: "admin-password"
-    databasePassword: "database-password"
 
   # MidPoint home directory persistence (/opt/midpoint/var)
   home:
