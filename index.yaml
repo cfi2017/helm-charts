@@ -399,6 +399,45 @@ entries:
     urls:
     - https://github.com/cfi2017/helm-charts/releases/download/getoutline-1.0.0/getoutline-1.0.0.tgz
     version: 1.0.0
+  midpoint:
+  - annotations:
+      artifacthub.io/links: |-
+        - name: support
+          url: https://cfi2017.github.io/helm-charts
+    apiVersion: v2
+    appVersion: 4.10-alpine
+    created: "2026-03-12T06:28:44.742313148Z"
+    dependencies:
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: postgres
+      repository: oci://registry-1.docker.io/cloudpirates
+      version: 0.11.5
+    description: MidPoint is an open-source identity governance and administration
+      platform.
+    digest: f8633d493cd6de306920a5fd9f157ae9a4c5efc01ecf12dccc5624b1b73575bb
+    home: https://evolveum.com/midpoint/
+    icon: https://evolveum.com/wp-content/uploads/2021/10/midpoint-logo.svg
+    keywords:
+    - midpoint
+    - identity
+    - iam
+    - idm
+    - identity-management
+    - identity-governance
+    kubeVersion: '>=1.24.0-0'
+    maintainers:
+    - email: info@swiss.dev
+      name: cfi2017
+      url: https://github.com/cfi2017
+    name: midpoint
+    sources:
+    - https://hub.docker.com/r/evolveum/midpoint
+    - https://github.com/evolveum/midpoint
+    type: application
+    urls:
+    - https://github.com/cfi2017/helm-charts/releases/download/midpoint-0.1.0/midpoint-0.1.0.tgz
+    version: 0.1.0
   qbittorrent:
   - annotations:
       artifacthub.io/links: |-
@@ -439,4 +478,4 @@ entries:
     urls:
     - https://github.com/cfi2017/helm-charts/releases/download/qbittorrent-6.13.3/qbittorrent-6.13.3.tgz
     version: 6.13.3
-generated: "2025-11-07T16:00:17.906772961Z"
+generated: "2026-03-12T06:28:44.742379273Z"
