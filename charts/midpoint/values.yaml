@@ -161,6 +161,9 @@ midpoint:
   # Additional volume mounts
   extraVolumeMounts: []
 
+  # Additional volume mounts
+  extraInitContainers: []
+
 # PostgreSQL dependency configuration
 postgresql:
   enabled: true
