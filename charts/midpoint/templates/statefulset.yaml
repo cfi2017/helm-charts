@@ -51,6 +51,9 @@ spec:
                 - ALL
             runAsNonRoot: true
             runAsUser: 1000
+        {{- if eq .Values.midpoint.migrationMode "initContainer" }}
+        {{- include "midpoint.migrationContainer" . | nindent 8}}
+        {{- else }}
         - name: midpoint-init
           image: {{ include "midpoint.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -77,6 +80,7 @@ spec:
             - name: db-pass
               mountPath: /opt/midpoint/config-secrets
               readOnly: true
+        {{- end }}
         {{- with .Values.midpoint.extraInitContainers }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

@@ -164,6 +164,9 @@ midpoint:
   # Additional volume mounts
   extraInitContainers: []
 
+  # Migration mode(job or initContainer)
+  migrationMode: job
+
 # PostgreSQL dependency configuration
 postgresql:
   enabled: true
