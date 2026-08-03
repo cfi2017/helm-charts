@@ -1,0 +1,222 @@
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+web:
+  replicaCount: 1
+  port: 8000
+  image:
+    repository: opencve/web
+    pullPolicy: IfNotPresent
+    tag: ""  # Defaults to Chart appVersion
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+    annotations: {}
+  init:
+    enabled: true
+  nginx:
+    image:
+      repository: nginx
+      pullPolicy: IfNotPresent
+      tag: trixie
+    port: 8080
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: opencve.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  httpRoute:
+    enabled: false
+    annotations: {}
+    parentRefs:
+      - name: my-gateway
+        namespace: default
+    hostnames:
+      - opencve.example.com
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  resources: {}
+  podAnnotations: {}
+  podLabels: {}
+  livenessProbe:
+    enabled: true
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: true
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+    successThreshold: 1
+  extraEnv: []
+  extraEnvFrom: []
+  extraVolumes: []
+  extraVolumeMounts: []
+
+airflow:
+  enabled: true
+  defaultAirflowRepository: opencve/scheduler
+  defaultAirflowTag: "3.0.0"
+  airflowVersion: "2.10.4"
+  executor: CeleryExecutor
+  fernetKey: "ywvTuNQw6bW-UlEyS0ykTqiz9on1cyMlHT7e1Ddo060="
+  postgresql:
+    enabled: false
+  redis:
+    enabled: true
+    persistence:
+      enabled: true
+      size: 5Gi
+  data:
+    metadataConnection:
+      user: opencve
+      pass: opencve
+      protocol: postgresql
+      host: ""
+      port: 5432
+      db: opencve
+      sslmode: disable
+    resultBackendConnection:
+      user: opencve
+      pass: opencve
+      protocol: postgresql
+      host: ""
+      port: 5432
+      db: opencve
+      sslmode: disable
+  config:
+    core:
+      dags_are_paused_at_creation: "true"
+      load_examples: "False"
+    logging:
+      logging_level: INFO
+    api:
+      auth_backends: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
+    scheduler:
+      enable_health_check: "True"
+  env:
+    - name: SQLALCHEMY_SILENCE_UBER_WARNING
+      value: "1"
+  volumes:
+    - name: repositories
+      persistentVolumeClaim:
+        claimName: '{{- if contains "opencve" .Release.Name }}{{ .Release.Name }}{{ else }}{{ printf "%s-opencve" .Release.Name }}{{ end }}-repositories'
+  volumeMounts:
+    - name: repositories
+      mountPath: /home/airflow/repositories
+  createUserJob:
+    defaultUser:
+      enabled: true
+      username: airflow
+      password: airflow
+  webserver:
+    enabled: true
+  apiServer:
+    enabled: false
+  triggerer:
+    enabled: false
+  httpRoute:
+    enabled: false
+    annotations: {}
+    parentRefs:
+      - name: my-gateway
+        namespace: default
+    hostnames:
+      - airflow.opencve.example.com
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /
+
+opencve:
+  baseUrl: "https://app.opencve.io"
+  secretKey: "django-insecure-8mjeblz2*z@_n&zn^xpo)(id8f90%@elj#t5dg)59hd69(553a"
+  existingSecret: ""
+  existingSecretKeys:
+    secretKey: opencve-secret-key
+  repositories:
+    mountPath: /app/repositories
+    persistence:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 20Gi
+      existingClaim: ""
+  gunicorn:
+    args: "--workers 2 --access-logfile '-'"
+  extraEnv: []
+  extraEnvFrom: []
+
+database:
+  existingSecret: ""
+  existingSecretKeys:
+    opencveDatabaseUrl: opencve-database-url
+
+postgresql:
+  enabled: true
+  auth:
+    username: opencve
+    password: opencve
+    database: opencve
+    existingSecret: ""
+    secretKeys:
+      passwordKey: "postgres-password"
+  persistence:
+    enabled: true
+    size: 10Gi
+  initdb:
+    scripts:
+      install-extensions.sh: |
+        #!/usr/bin/env bash
+        psql -U "$POSTGRES_USER" --dbname="$POSTGRES_DB" <<-'EOSQL'
+          CREATE EXTENSION IF NOT EXISTS pg_trgm;
+          CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+        EOSQL
+
+externalDatabase:
+  host: ""
+  port: 5432
+  database: opencve
+  username: opencve
+  password: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podSecurityContext: {}
+securityContext: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}

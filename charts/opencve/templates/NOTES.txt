@@ -1,0 +1,13 @@
+OpenCVE has been installed.
+
+OpenCVE web service:
+  {{ printf "%s-web" (include "opencve.fullname" .) }}:{{ .Values.web.service.port }}
+
+{{- if and .Values.airflow.enabled .Values.airflow.webserver.enabled }}
+Airflow webserver service:
+  {{ include "opencve.airflow.webserverServiceName" . }}:8080
+{{- end }}
+
+The chart expects OpenCVE web and scheduler images to be available at:
+  web: {{ include "opencve.web.image" . }}
+  scheduler: {{ .Values.airflow.defaultAirflowRepository }}:{{ .Values.airflow.defaultAirflowTag }}

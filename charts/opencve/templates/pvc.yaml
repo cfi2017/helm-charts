@@ -1,0 +1,17 @@
+{{- if and .Values.opencve.repositories.persistence.enabled (not .Values.opencve.repositories.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "opencve.repositories.claimName" . }}
+  labels:
+    {{- include "opencve.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.opencve.repositories.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.opencve.repositories.persistence.size }}
+  {{- with .Values.opencve.repositories.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}

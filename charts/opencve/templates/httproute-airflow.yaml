@@ -1,0 +1,29 @@
+{{- if and .Values.airflow.enabled .Values.airflow.webserver.enabled .Values.airflow.httpRoute.enabled -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ printf "%s-airflow" (include "opencve.fullname" .) }}
+  labels:
+    {{- include "opencve.componentLabels" (dict "root" . "component" "airflow-webserver") | nindent 4 }}
+  {{- with .Values.airflow.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    {{- toYaml .Values.airflow.httpRoute.parentRefs | nindent 4 }}
+  {{- with .Values.airflow.httpRoute.hostnames }}
+  hostnames:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.airflow.httpRoute.rules }}
+    - {{- with .matches }}
+      matches:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      backendRefs:
+        - name: {{ include "opencve.airflow.webserverServiceName" $ }}
+          port: 8080
+    {{- end }}
+{{- end }}

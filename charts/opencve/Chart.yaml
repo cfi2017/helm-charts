@@ -1,0 +1,37 @@
+annotations:
+  artifacthub.io/links: |-
+    - name: support
+      url: https://cfi2017.github.io/helm-charts
+apiVersion: v2
+appVersion: 3.0.0
+dependencies:
+  - name: airflow
+    version: "1.19.0"
+    repository: https://airflow.apache.org
+    condition: airflow.enabled
+  - name: postgres
+    alias: postgresql
+    version: "0.11.5"
+    repository: oci://registry-1.docker.io/cloudpirates
+    condition: postgresql.enabled
+deprecated: false
+description: OpenCVE is a vulnerability intelligence platform that helps monitor and manage CVEs.
+home: https://www.opencve.io/
+icon: https://raw.githubusercontent.com/opencve/opencve/master/logo.png
+keywords:
+  - opencve
+  - cve
+  - vulnerability
+  - security
+  - airflow
+kubeVersion: ">=1.24.0-0"
+maintainers:
+  - name: cfi2017
+    email: info@swiss.dev
+    url: https://github.com/cfi2017
+name: opencve
+sources:
+  - https://github.com/opencve/opencve
+  - https://github.com/apache/airflow
+type: application
+version: 0.1.0
