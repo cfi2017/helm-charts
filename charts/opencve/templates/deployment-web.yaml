@@ -1,0 +1,202 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-web" (include "opencve.fullname" .) }}
+  labels:
+    {{- include "opencve.componentLabels" (dict "root" . "component" "web") | nindent 4 }}
+spec:
+  {{- if not .Values.web.autoscaling.enabled }}
+  replicas: {{ .Values.web.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "opencve.componentSelectorLabels" (dict "root" . "component" "web") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.web.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "opencve.componentLabels" (dict "root" . "component" "web") | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.web.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "opencve.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "opencve.postgresql.host" . }} {{ include "opencve.postgresql.port" . }}; do
+                echo "Waiting for PostgreSQL..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        {{- if .Values.web.init.enabled }}
+        - name: django-init
+          image: {{ include "opencve.web.image" . }}
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              python manage.py migrate
+              python manage.py collectstatic --no-input
+          env:
+            - name: OPENCVE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opencve.databaseSecretName" . }}
+                  key: {{ .Values.database.existingSecretKeys.opencveDatabaseUrl }}
+            - name: OPENCVE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opencve.opencveSecretName" . }}
+                  key: {{ .Values.opencve.existingSecretKeys.secretKey }}
+            {{- with .Values.opencve.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.web.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "opencve.fullname" . }}
+            {{- with .Values.opencve.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.web.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: static
+              mountPath: /app/static
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+        {{- end }}
+      containers:
+        - name: web
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "opencve.web.image" . }}
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          ports:
+            - name: app
+              containerPort: {{ .Values.web.port }}
+              protocol: TCP
+          env:
+            - name: OPENCVE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opencve.databaseSecretName" . }}
+                  key: {{ .Values.database.existingSecretKeys.opencveDatabaseUrl }}
+            - name: OPENCVE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opencve.opencveSecretName" . }}
+                  key: {{ .Values.opencve.existingSecretKeys.secretKey }}
+            {{- with .Values.opencve.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.web.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "opencve.fullname" . }}
+            {{- with .Values.opencve.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.web.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.web.livenessProbe.enabled }}
+          livenessProbe:
+            {{- omit .Values.web.livenessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.web.readinessProbe.enabled }}
+          readinessProbe:
+            {{- omit .Values.web.readinessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          volumeMounts:
+            - name: static
+              mountPath: /app/static
+            {{- if .Values.opencve.repositories.persistence.enabled }}
+            - name: repositories
+              mountPath: {{ .Values.opencve.repositories.mountPath }}
+              readOnly: true
+            {{- end }}
+            {{- with .Values.web.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        - name: nginx
+          image: {{ .Values.web.nginx.image.repository }}:{{ .Values.web.nginx.image.tag }}
+          imagePullPolicy: {{ .Values.web.nginx.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.web.nginx.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: static
+              mountPath: /var/www/opencve/static
+              readOnly: true
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: opencve-nginx.conf
+              readOnly: true
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+      volumes:
+        - name: static
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: {{ include "opencve.fullname" . }}
+            items:
+              - key: opencve-nginx.conf
+                path: opencve-nginx.conf
+        {{- if .Values.opencve.repositories.persistence.enabled }}
+        - name: repositories
+          persistentVolumeClaim:
+            claimName: {{ include "opencve.repositories.claimName" . }}
+        {{- end }}
+        {{- with .Values.web.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

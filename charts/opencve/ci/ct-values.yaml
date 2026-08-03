@@ -1,0 +1,23 @@
+web:
+  image:
+    repository: nginx
+    tag: "1.27-alpine"
+  livenessProbe:
+    enabled: false
+  readinessProbe:
+    enabled: false
+  extraEnv: []
+  init:
+    enabled: false
+
+airflow:
+  enabled: false
+
+opencve:
+  repositories:
+    persistence:
+      enabled: false
+
+postgresql:
+  persistence:
+    enabled: false

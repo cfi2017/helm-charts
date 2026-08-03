@@ -4,6 +4,7 @@ chart-repos:
   - bitnami=https://charts.bitnami.com/bitnami
   - secrets-store-csi-driver=https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
   - grafana=https://grafana.github.io/helm-charts
+  - apache-airflow=https://airflow.apache.org
 excluded-charts:
   - common
   - argoconfig

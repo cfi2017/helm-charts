@@ -1,0 +1,9 @@
+dependencies:
+- name: airflow
+  repository: https://airflow.apache.org
+  version: 1.19.0
+- name: postgres
+  repository: oci://registry-1.docker.io/cloudpirates
+  version: 0.11.5
+digest: sha256:2e07262f7a0ccb348965409fb7d9e8e929c242be90cd00e6c10f977e7fb6d7a5
+generated: "2026-08-03T15:19:18.228871569+02:00"
