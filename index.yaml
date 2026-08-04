@@ -597,6 +597,47 @@ entries:
           url: https://cfi2017.github.io/helm-charts
     apiVersion: v2
     appVersion: 3.0.0
+    created: "2026-08-04T08:50:04.068361108Z"
+    dependencies:
+    - condition: airflow.enabled
+      name: airflow
+      repository: https://airflow.apache.org
+      version: 1.19.0
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: postgres
+      repository: oci://registry-1.docker.io/cloudpirates
+      version: 0.11.5
+    description: OpenCVE is a vulnerability intelligence platform that helps monitor
+      and manage CVEs.
+    digest: d9844f3cd68eccf61ce62a0e2d90013da84b317f96133e4a4588cf05fd51a81d
+    home: https://www.opencve.io/
+    icon: https://raw.githubusercontent.com/opencve/opencve/master/logo.png
+    keywords:
+    - opencve
+    - cve
+    - vulnerability
+    - security
+    - airflow
+    kubeVersion: '>=1.24.0-0'
+    maintainers:
+    - email: info@swiss.dev
+      name: cfi2017
+      url: https://github.com/cfi2017
+    name: opencve
+    sources:
+    - https://github.com/opencve/opencve
+    - https://github.com/apache/airflow
+    type: application
+    urls:
+    - https://github.com/cfi2017/helm-charts/releases/download/opencve-0.1.1/opencve-0.1.1.tgz
+    version: 0.1.1
+  - annotations:
+      artifacthub.io/links: |-
+        - name: support
+          url: https://cfi2017.github.io/helm-charts
+    apiVersion: v2
+    appVersion: 3.0.0
     created: "2026-08-03T14:10:36.572489318Z"
     dependencies:
     - condition: airflow.enabled
@@ -672,4 +713,4 @@ entries:
     urls:
     - https://github.com/cfi2017/helm-charts/releases/download/qbittorrent-6.13.3/qbittorrent-6.13.3.tgz
     version: 6.13.3
-generated: "2026-08-03T14:10:36.572521445Z"
+generated: "2026-08-04T08:50:04.068410801Z"
