@@ -7,3 +7,14 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+
+  # Maintain base images for OpenCVE images published to GHCR
+  - package-ecosystem: "docker"
+    directory: "/images/opencve/web"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "docker"
+    directory: "/images/opencve/scheduler"
+    schedule:
+      interval: "daily"
