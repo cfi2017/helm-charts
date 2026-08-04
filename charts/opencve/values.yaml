@@ -6,7 +6,7 @@ web:
   replicaCount: 1
   port: 8000
   image:
-    repository: opencve/web
+    repository: ghcr.io/cfi2017/opencve-web
     pullPolicy: IfNotPresent
     tag: ""  # Defaults to Chart appVersion
   service:
@@ -81,7 +81,7 @@ web:
 
 airflow:
   enabled: true
-  defaultAirflowRepository: opencve/scheduler
+  defaultAirflowRepository: ghcr.io/cfi2017/opencve-scheduler
   defaultAirflowTag: "3.0.0"
   airflowVersion: "2.10.4"
   executor: CeleryExecutor
