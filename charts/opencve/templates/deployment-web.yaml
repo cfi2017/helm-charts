@@ -94,6 +94,9 @@ spec:
           volumeMounts:
             - name: static
               mountPath: /app/static
+            {{- with .Values.web.init.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
         {{- end }}
