@@ -166,3 +166,47 @@ Return the midpoint image reference
 {{- $tag := .Values.image.tag | default .Chart.AppVersion -}}
 {{- printf "%s:%s" .Values.image.repository $tag -}}
 {{- end }}
+
+
+{{- define "midpoint.migrationContainer" -}}
+- name: db-init
+  image: {{ include "midpoint.image" . }}
+  imagePullPolicy: {{ .Values.image.pullPolicy }}
+  command:
+  - /bin/bash
+  - -c
+  - |
+      set -e
+      cd /opt/midpoint
+      bin/midpoint.sh init-native
+      echo '---'
+      bin/ninja.sh -B info >/dev/null 2>/tmp/ninja.log || true
+      if grep -q "ERROR" /tmp/ninja.log; then
+      echo 'Initializing repository schema...'
+      bin/ninja.sh run-sql --create --mode REPOSITORY
+      bin/ninja.sh run-sql --create --mode AUDIT
+      else
+      echo 'Repository init is not needed...'
+      fi
+  env:
+  - name: MP_INIT_CFG
+    value: /opt/midpoint/var
+  - name: MP_SET_midpoint_repository_database
+    value: postgresql
+  - name: MP_SET_midpoint_repository_jdbcUrl
+    value: {{ include "midpoint.jdbcUrl" . | quote }}
+  - name: MP_SET_midpoint_repository_jdbcUsername
+    value: {{ include "midpoint.postgresql.username" . | quote }}
+  - name: MP_SET_midpoint_repository_jdbcPassword_FILE
+    value: /opt/midpoint/config-secrets/database-password
+  {{- with .Values.securityContext }}
+  securityContext:
+  {{- toYaml .| nindent 4 }}
+  {{- end }}
+  volumeMounts:
+  - name: midpoint-home
+    mountPath: /opt/midpoint/var
+  - name: db-pass
+    mountPath: /opt/midpoint/config-secrets
+    readOnly: true
+{{- end }}
