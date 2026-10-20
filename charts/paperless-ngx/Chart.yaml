@@ -1,0 +1,33 @@
+apiVersion: v2
+name: paperless-ngx
+description: A document management system that transforms physical documents into a searchable online archive.
+type: application
+version: 0.1.0
+appVersion: "3.3.3"
+kubeVersion: ">=1.26.0-0"
+home: https://docs.paperless-ngx.com/
+sources:
+  - https://github.com/paperless-ngx/paperless-ngx
+icon: https://raw.githubusercontent.com/paperless-ngx/paperless-ngx/main/resources/logo/web/png/White%20logo%20-%20no%20background.png
+keywords:
+  - paperless
+  - documents
+  - ocr
+maintainers:
+  - name: cfi2017
+    email: info@swiss.dev
+    url: https://github.com/cfi2017
+annotations:
+  artifacthub.io/links: |-
+    - name: support
+      url: https://cfi2017.github.io/helm-charts
+dependencies:
+  - name: valkey
+    version: "0.14.0"
+    repository: oci://registry-1.docker.io/cloudpirates
+    condition: valkey.enabled
+  - name: postgres
+    alias: postgresql
+    version: "0.21.2"
+    repository: oci://registry-1.docker.io/cloudpirates
+    condition: postgresql.enabled

@@ -1,0 +1,48 @@
+name: Paperless-ngx Integration
+
+on:
+  pull_request:
+    paths:
+      - charts/paperless-ngx/**
+      - .github/workflows/paperless-ngx.yaml
+      - .github/workflows/release.yaml
+      - hack/ci/paperless-ngx.sh
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Paperless-ngx (${{ matrix.database }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [bundled, external]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+        with:
+          version: v3.17.4
+      - name: Install Helm unittest
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.0.3
+      - name: Build and validate chart
+        run: |
+          helm dependency build charts/paperless-ngx
+          helm lint --strict charts/paperless-ngx
+          helm unittest charts/paperless-ngx
+      - uses: helm/kind-action@v1.15.1
+      - name: Install Gateway API CRDs
+        run: kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml
+      - name: Install and test Paperless
+        run: hack/ci/paperless-ngx.sh "${{ matrix.database }}"
+      - name: Collect cluster diagnostics
+        if: failure()
+        run: |
+          kubectl get pods,services,pvc,httproutes -A -o wide
+          kubectl get events -A --sort-by=.metadata.creationTimestamp
+          kubectl describe pods -n paperless-ci
+          kubectl logs -n paperless-ci -l app.kubernetes.io/name=paperless-ngx --all-containers --tail=200

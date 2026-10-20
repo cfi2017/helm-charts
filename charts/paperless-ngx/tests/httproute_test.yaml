@@ -1,0 +1,47 @@
+suite: gateway routing
+templates:
+  - templates/httproute.yaml
+tests:
+  - it: omits the route by default
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: routes to the configured service with gateway attachments and filters
+    set:
+      service.port: 80
+      httpRoute.enabled: true
+      httpRoute.parentRefs:
+        - name: public
+          namespace: gateways
+          sectionName: https
+      httpRoute.hostnames: [paperless.example.com]
+      httpRoute.rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          filters:
+            - type: RequestHeaderModifier
+              requestHeaderModifier:
+                set:
+                  - name: X-Forwarded-Proto
+                    value: https
+    asserts:
+      - equal:
+          path: apiVersion
+          value: gateway.networking.k8s.io/v1
+      - equal:
+          path: spec.parentRefs[0].namespace
+          value: gateways
+      - equal:
+          path: spec.rules[0].backendRefs[0].port
+          value: 80
+      - equal:
+          path: spec.rules[0].filters[0].type
+          value: RequestHeaderModifier
+  - it: requires a gateway parent reference
+    set:
+      httpRoute.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: httpRoute.parentRefs is required when HTTPRoute is enabled

@@ -1,0 +1,33 @@
+suite: persistent volume metadata
+templates:
+  - templates/pvc.yaml
+tests:
+  - it: labels and annotates individual claims and supports no storage class
+    set:
+      persistence.data.labels:
+        backup: daily
+      persistence.data.annotations:
+        helm.sh/resource-policy: keep
+      persistence.data.storageClass: '-'
+    documentSelector:
+      path: metadata.name
+      value: RELEASE-NAME-paperless-ngx-data
+    asserts:
+      - equal:
+          path: metadata.labels.backup
+          value: daily
+      - equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+      - equal:
+          path: spec.storageClassName
+          value: ''
+  - it: omits claims for existing and ephemeral volumes
+    set:
+      persistence.data.enabled: false
+      persistence.media.existingClaim: documents
+      persistence.consume.enabled: false
+      persistence.export.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

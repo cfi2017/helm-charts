@@ -1,0 +1,161 @@
+replicaCount: 1
+nameOverride: ""
+fullnameOverride: ""
+commonLabels: {}
+image:
+  repository: ghcr.io/paperless-ngx/paperless-ngx
+  tag: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+# Recreate avoids concurrent consumers and multi-attach errors with RWO storage.
+strategy:
+  type: Recreate
+podAnnotations: {}
+podLabels: {}
+podSecurityContext:
+  fsGroup: 1000
+# The upstream entrypoint starts as root to initialize volumes and drops privileges.
+securityContext: {}
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+service:
+  type: ClusterIP
+  port: 8000
+  annotations: {}
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+startupProbe:
+  httpGet:
+    path: /
+    port: http
+  periodSeconds: 10
+  failureThreshold: 60
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  periodSeconds: 30
+  timeoutSeconds: 5
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 5
+
+paperless:
+  # Public origin, e.g. https://paperless.example.com. Required behind a proxy.
+  url: ""
+  timeZone: UTC
+  ocrLanguage: eng
+  # A stable Django signing key is generated and reused on upgrades if unset.
+  secretKey: ""
+  existingSecret: ""
+  existingSecretKey: secret-key
+# Additional Paperless settings, including admin credentials, can use secretKeyRef.
+extraEnv: []
+extraEnvFrom: []
+extraVolumes: []
+extraVolumeMounts: []
+
+# Each volume can use an existing claim or emptyDir (enabled: false).
+# storageClass: "" uses the cluster default; "-" explicitly disables it.
+persistence:
+  data:
+    enabled: true
+    existingClaim: ""
+    size: 5Gi
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    labels: {}
+    annotations: {}
+  media:
+    enabled: true
+    existingClaim: ""
+    size: 20Gi
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    labels: {}
+    annotations: {}
+  consume:
+    enabled: true
+    existingClaim: ""
+    size: 5Gi
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    labels: {}
+    annotations: {}
+  export:
+    enabled: true
+    existingClaim: ""
+    size: 5Gi
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    labels: {}
+    annotations: {}
+
+postgresql:
+  enabled: true
+  auth:
+    username: paperless
+    database: paperless
+    # Empty password lets the dependency generate and retain a random password.
+    password: ""
+    existingSecret: ""
+    secretKeys:
+      adminPasswordKey: postgres-password
+  persistence:
+    enabled: true
+    size: 8Gi
+    labels: {}
+
+# Used when postgresql.enabled is false. Password always comes from a Secret.
+# Set other secretKeys to read host/port/database/username from the same Secret.
+externalDatabase:
+  host: ""
+  port: 5432
+  database: paperless
+  username: paperless
+  existingSecret: ""
+  secretKeys:
+    password: password
+    host: ""
+    port: ""
+    database: ""
+    username: ""
+
+valkey:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  config:
+    maxMemoryPolicy: noeviction
+  persistence:
+    enabled: true
+    size: 1Gi
+    labels: {}
+# Set valkey.enabled=false and supply a full redis:// or rediss:// URL in a Secret.
+# Also required with bundled Valkey authentication/TLS or replication enabled.
+# URL-encode username/password in the URL.
+externalBroker:
+  existingSecret: ""
+  existingSecretKey: redis-url
+
+# Requires Gateway API v1 CRDs and a controller. TLS terminates at the Gateway.
+httpRoute:
+  enabled: false
+  labels: {}
+  annotations: {}
+  parentRefs: []
+  hostnames: []
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      # filters: []

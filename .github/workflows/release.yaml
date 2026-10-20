@@ -5,8 +5,18 @@ on:
     branches:
       - main
 
+concurrency:
+  group: chart-release
+  cancel-in-progress: false
+
 jobs:
+  paperless-checks:
+    uses: ./.github/workflows/paperless-ngx.yaml
+    permissions:
+      contents: read
+
   release:
+    needs: paperless-checks
     permissions:
       contents: write
       pages: write
@@ -27,7 +37,7 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v5
         with:
-          version: v3.14.0
+          version: v3.17.4
 
       - name: Add dependency chart repos
         run: yq e '."chart-repos"[]' hack/chart-testing/ct.yaml | tr "=" " " | xargs -L1 helm repo add
