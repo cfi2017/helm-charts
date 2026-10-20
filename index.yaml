@@ -714,6 +714,45 @@ entries:
     urls:
     - https://github.com/cfi2017/helm-charts/releases/download/opencve-0.1.0/opencve-0.1.0.tgz
     version: 0.1.0
+  paperless-ngx:
+  - annotations:
+      artifacthub.io/links: |-
+        - name: support
+          url: https://cfi2017.github.io/helm-charts
+    apiVersion: v2
+    appVersion: 3.3.3
+    created: "2026-10-20T16:36:29.601780609Z"
+    dependencies:
+    - condition: valkey.enabled
+      name: valkey
+      repository: oci://registry-1.docker.io/cloudpirates
+      version: 0.14.0
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: postgres
+      repository: oci://registry-1.docker.io/cloudpirates
+      version: 0.21.2
+    description: A document management system that transforms physical documents into
+      a searchable online archive.
+    digest: f8a930c754b349172ee31d357cd35054fd200aee608100c09be3e73703010005
+    home: https://docs.paperless-ngx.com/
+    icon: https://raw.githubusercontent.com/paperless-ngx/paperless-ngx/main/resources/logo/web/png/White%20logo%20-%20no%20background.png
+    keywords:
+    - paperless
+    - documents
+    - ocr
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - email: info@swiss.dev
+      name: cfi2017
+      url: https://github.com/cfi2017
+    name: paperless-ngx
+    sources:
+    - https://github.com/paperless-ngx/paperless-ngx
+    type: application
+    urls:
+    - https://github.com/cfi2017/helm-charts/releases/download/paperless-ngx-0.1.0/paperless-ngx-0.1.0.tgz
+    version: 0.1.0
   qbittorrent:
   - annotations:
       artifacthub.io/links: |-
@@ -754,4 +793,4 @@ entries:
     urls:
     - https://github.com/cfi2017/helm-charts/releases/download/qbittorrent-6.13.3/qbittorrent-6.13.3.tgz
     version: 6.13.3
-generated: "2026-08-05T08:02:22.053851477Z"
+generated: "2026-10-20T16:36:29.601810174Z"
