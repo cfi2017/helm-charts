@@ -1,0 +1,23 @@
+suite: dependency volume labels
+templates:
+  - charts/postgresql/templates/statefulset.yaml
+  - charts/valkey/templates/statefulset.yaml
+tests:
+  - it: propagates PostgreSQL PVC labels
+    template: charts/postgresql/templates/statefulset.yaml
+    set:
+      postgresql.persistence.labels:
+        backup: daily
+    asserts:
+      - equal:
+          path: spec.volumeClaimTemplates[0].metadata.labels.backup
+          value: daily
+  - it: propagates Valkey PVC labels
+    template: charts/valkey/templates/statefulset.yaml
+    set:
+      valkey.persistence.labels:
+        backup: daily
+    asserts:
+      - equal:
+          path: spec.volumeClaimTemplates[0].metadata.labels.backup
+          value: daily

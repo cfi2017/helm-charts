@@ -1,0 +1,111 @@
+suite: database and storage integration
+templates:
+  - templates/deployment.yaml
+release:
+  name: archive
+tests:
+  - it: connects to the bundled services and generated database secret
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_REDIS
+            value: redis://archive-valkey:6379/0
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: archive-postgresql
+                key: postgres-password
+  - it: honors dependency name overrides and existing credentials
+    set:
+      postgresql.fullnameOverride: custom-db
+      postgresql.auth.existingSecret: db-auth
+      postgresql.auth.secretKeys.adminPasswordKey: custom-password
+      valkey.fullnameOverride: custom-broker
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBHOST
+            value: custom-db
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: db-auth
+                key: custom-password
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_REDIS
+            value: redis://custom-broker:6379/0
+  - it: reads all external database fields from a secret
+    set:
+      postgresql.enabled: false
+      externalDatabase.existingSecret: external-db
+      externalDatabase.secretKeys:
+        host: hostname
+        port: port
+        database: dbname
+        username: user
+        password: pass
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBHOST
+            valueFrom:
+              secretKeyRef:
+                name: external-db
+                key: hostname
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_DBPASS
+            valueFrom:
+              secretKeyRef:
+                name: external-db
+                key: pass
+  - it: requires external database credentials
+    set:
+      postgresql.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: externalDatabase.existingSecret is required when postgresql.enabled=false
+  - it: requires a broker URL when authentication is enabled
+    set:
+      valkey.auth.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: externalBroker.existingSecret containing a full broker URL is required for external, authenticated, TLS or replicated Valkey
+  - it: supports external brokers and existing claims alongside ephemeral storage
+    set:
+      valkey.enabled: false
+      externalBroker.existingSecret: broker
+      persistence.media.existingClaim: documents
+      persistence.consume.enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PAPERLESS_REDIS
+            valueFrom:
+              secretKeyRef:
+                name: broker
+                key: redis-url
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: media
+            persistentVolumeClaim:
+              claimName: documents
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: consume
+            emptyDir: {}

@@ -1,0 +1,161 @@
+{{- if and (not .Values.externalBroker.existingSecret) (or (not .Values.valkey.enabled) .Values.valkey.auth.enabled .Values.valkey.tls.enabled (ne .Values.valkey.architecture "standalone")) }}
+{{- fail "externalBroker.existingSecret containing a full broker URL is required for external, authenticated, TLS or replicated Valkey" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "paperless-ngx.fullname" . }}
+  labels:
+    {{- include "paperless-ngx.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "paperless-ngx.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "paperless-ngx.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "paperless-ngx.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: paperless-ngx
+          image: {{ printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: PAPERLESS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.paperless.existingSecret | default (include "paperless-ngx.fullname" .) }}
+                  key: {{ ternary .Values.paperless.existingSecretKey "secret-key" (ne .Values.paperless.existingSecret "") }}
+            - name: PAPERLESS_TIME_ZONE
+              value: {{ .Values.paperless.timeZone | quote }}
+            - name: PAPERLESS_OCR_LANGUAGE
+              value: {{ .Values.paperless.ocrLanguage | quote }}
+            {{- with .Values.paperless.url }}
+            - name: PAPERLESS_URL
+              value: {{ . | quote }}
+            {{- end }}
+            - name: PAPERLESS_REDIS
+              {{- if .Values.externalBroker.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalBroker.existingSecret }}
+                  key: {{ .Values.externalBroker.existingSecretKey }}
+              {{- else }}
+              value: {{ printf "redis://%s:%v/0" (include "valkey.fullname" .Subcharts.valkey) .Values.valkey.service.port | quote }}
+              {{- end }}
+            - name: PAPERLESS_DBENGINE
+              value: postgresql
+            {{- if .Values.postgresql.enabled }}
+            - name: PAPERLESS_DBHOST
+              value: {{ include "postgres.fullname" .Subcharts.postgresql | quote }}
+            - name: PAPERLESS_DBPORT
+              value: {{ .Values.postgresql.service.port | quote }}
+            - name: PAPERLESS_DBNAME
+              value: {{ .Values.postgresql.auth.database | quote }}
+            - name: PAPERLESS_DBUSER
+              value: {{ .Values.postgresql.auth.username | quote }}
+            - name: PAPERLESS_DBPASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "postgres.secretName" .Subcharts.postgresql }}
+                  key: {{ include "postgres.adminPasswordKey" .Subcharts.postgresql }}
+            {{- else }}
+            {{- $db := .Values.externalDatabase }}
+            {{- $secret := required "externalDatabase.existingSecret is required when postgresql.enabled=false" $db.existingSecret }}
+            {{- range $field, $env := dict "host" "PAPERLESS_DBHOST" "port" "PAPERLESS_DBPORT" "database" "PAPERLESS_DBNAME" "username" "PAPERLESS_DBUSER" }}
+            - name: {{ $env }}
+              {{- if index $db.secretKeys $field }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ index $db.secretKeys $field }}
+              {{- else }}
+              value: {{ required (printf "externalDatabase.%s or its secretKeys entry is required" $field) (index $db $field) | quote }}
+              {{- end }}
+            {{- end }}
+            - name: PAPERLESS_DBPASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ required "externalDatabase.secretKeys.password is required" $db.secretKeys.password }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- range $name, $volume := .Values.persistence }}
+            - name: {{ $name }}
+              mountPath: /usr/src/paperless/{{ $name }}
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- range $name, $volume := .Values.persistence }}
+        - name: {{ $name }}
+          {{- if $volume.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ $volume.existingClaim }}
+          {{- else if $volume.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "paperless-ngx.fullname" $ }}-{{ $name }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

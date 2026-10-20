@@ -1,0 +1,13 @@
+# Smaller claims for kind; all persistent volume paths remain exercised.
+persistence:
+  data:
+    size: 1Gi
+  media:
+    size: 1Gi
+  consume:
+    size: 1Gi
+  export:
+    size: 1Gi
+postgresql:
+  persistence:
+    size: 1Gi
