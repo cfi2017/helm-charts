@@ -23,6 +23,13 @@ oc apply -f https://cfi2017.github.io/helm-charts/cfi2017-charts-repo.yaml
 ```
 
 ### Available Helm charts
+#### [paperless-ngx](https://github.com/cfi2017/helm-charts/tree/main/charts/paperless-ngx) chart
+
+![Version: 0.x](https://img.shields.io/badge/version-0.x-brightgreen) ![App version: 3.3.x](https://img.shields.io/badge/app%20version-3.3.x-brightgreen)
+
+A document management system that transforms physical documents into a searchable online archive.
+
+[<img alt="paperless-ngx" src="https://raw.githubusercontent.com/paperless-ngx/paperless-ngx/main/resources/logo/web/png/White%20logo%20-%20no%20background.png" width="128">](https://github.com/cfi2017/helm-charts/tree/main/charts/paperless-ngx)
 
 #### Argo CD app-of-apps charts
 
