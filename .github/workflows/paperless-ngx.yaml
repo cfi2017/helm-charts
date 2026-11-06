@@ -34,7 +34,7 @@ jobs:
           helm dependency build charts/paperless-ngx
           helm lint --strict charts/paperless-ngx
           helm unittest charts/paperless-ngx
-      - uses: helm/kind-action@v1.15.1
+      - uses: helm/kind-action@v1.15.2
       - name: Install Gateway API CRDs
         run: kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml
       - name: Install and test Paperless
