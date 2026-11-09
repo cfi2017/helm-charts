@@ -10,7 +10,7 @@ install_plugin() {
   local archive="$work_dir/helm-unittest.tgz"
   local url=https://github.com/helm-unittest/helm-unittest/releases/download/v1.0.3/helm-unittest-linux-amd64-1.0.3.tgz
   curl --fail --location --retry 3 --retry-all-errors \
-    --connect-timeout 15 --max-time 120 --output "$archive" "$url" || return
+    --connect-timeout 15 --max-time 120 --output "$archive" "${url}?download=1" || return
   # Published in v1.0.3's helm-unittest-checksum.sha.
   printf '9761f23d9509c98770c026e019e743b524b57010f4bc29175f78d2582ace0633  %s\n' "$archive" \
     | sha256sum --check || return

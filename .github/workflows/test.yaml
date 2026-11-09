@@ -89,3 +89,22 @@ jobs:
 
       - name: Run chart-testing (install)
         run: ct --config=hack/chart-testing/ct-install.yaml install
+
+  diagnose-setup:
+    name: Diagnose previous CI setup failure
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Read failed setup logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh run view 42580951851 --job 129039273495 --log-failed > /tmp/previous-failure.log
+          message=$(tail -n 70 /tmp/previous-failure.log)
+          message=${message//'%'/'%25'}
+          message=${message//$'\r'/'%0D'}
+          message=${message//$'\n'/'%0A'}
+          printf '::warning title=Previous setup failure::%s\n' "$message"
