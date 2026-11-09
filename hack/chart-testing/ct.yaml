@@ -5,7 +5,10 @@ chart-repos:
   - secrets-store-csi-driver=https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
   - grafana=https://grafana.github.io/helm-charts
   - apache-airflow=https://airflow.apache.org
+# Validate the same accounts via the authenticated API instead of browser URLs.
+validate-maintainers: false
 additional-commands:
+  - bash hack/ci/tests/validate-chart-maintainers.sh {{ .Path }}
   - helm unittest {{ .Path }}
   - .tmp/bin/ah lint -p {{ .Path }}
   - hack/pluto.sh {{ .Path }}
