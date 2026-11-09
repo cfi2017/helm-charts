@@ -14,7 +14,7 @@ readonly gomplate_docs="https://gomplate_docs.gomplate.ca/installing/"
 set +e
 
 if [[ ! -x `which gomplate` ]]; then
-    curl -L -o $gomplate_bin $gomplate_url
+    github_release_asset hairyhenderson/gomplate "v$gomplate_version" gomplate_linux-amd64 > "$gomplate_bin" || err "Could not download gomplate."
     chmod +x $gomplate_bin
     [[ ! -x $gomplate_bin ]] && err "Could not install gomplate binary. See $gomplate_docs for info."
 fi
