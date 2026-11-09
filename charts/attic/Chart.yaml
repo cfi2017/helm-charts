@@ -1,0 +1,14 @@
+apiVersion: v2
+name: attic
+description: A self-hosted Nix binary cache backed by Attic.
+type: application
+version: 0.1.0
+appVersion: "latest"
+kubeVersion: ">=1.26.0-0"
+home: https://attic.rs
+sources:
+  - https://github.com/zhaofengli/attic
+maintainers:
+  - name: cfi2017
+    email: info@swiss.dev
+    url: https://github.com/cfi2017
