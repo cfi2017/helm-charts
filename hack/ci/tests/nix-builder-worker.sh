@@ -41,10 +41,10 @@ done
 # Use another Nix container as the client, sharing only the worker's network.
 output=$(docker run --rm --network "container:$worker" --entrypoint /bin/sh \
   -v "$test_dir/keys:/keys:ro" \
-  -e 'NIX_SSHOPTS=-o StrictHostKeyChecking=no -o UserKnownHostsFile=/tmp/known_hosts' \
+  -e 'NIX_SSHOPTS=-p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/tmp/known_hosts' \
   "$image" -ec '
     nix --extra-experimental-features "nix-command flakes" build \
-      --store "ssh-ng://root@127.0.0.1:2222?ssh-key=/keys/id_ed25519" \
+      --store "ssh-ng://root@127.0.0.1?ssh-key=/keys/id_ed25519" \
       --option substituters "" --no-link --print-out-paths --impure \
       --expr '\''derivation { name = "remote-smoke"; system = "x86_64-linux"; builder = "/bin/sh"; args = [ "-c" "echo built > $out" ]; }'\''
   ')

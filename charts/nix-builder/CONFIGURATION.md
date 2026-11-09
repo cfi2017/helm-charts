@@ -47,10 +47,14 @@ the PVC and survives scale-down. For local forwarding its known_hosts name is
 
 ```sh
 kubectl exec deploy/builder-nix-builder -- cat /data/ssh/ssh_host_ed25519_key.pub
-nix store ping --store 'ssh-ng://root@localhost:2222?ssh-key=/absolute/path/to/key'
-nix build --impure --expr 'derivation { name = "remote-test"; system = "x86_64-linux"; builder = "/bin/sh"; args = [ "-c" "echo built > $out" ]; }' \
-  --builders 'ssh-ng://root@localhost:2222 x86_64-linux /absolute/path/to/key 4 1' --max-jobs 0
+NIX_SSHOPTS='-p 2222' nix store ping --store 'ssh-ng://root@localhost?ssh-key=/absolute/path/to/key'
+NIX_SSHOPTS='-p 2222' nix build --impure --expr 'derivation { name = "remote-test"; system = "x86_64-linux"; builder = "/bin/sh"; args = [ "-c" "echo built > $out" ]; }' \
+  --builders 'ssh-ng://root@localhost x86_64-linux /absolute/path/to/key 4 1' --max-jobs 0
 ```
+
+Nix 2.24 does not parse a port in an `ssh-ng` URL. For persistent or daemon
+builds, use a host alias in the daemon user's SSH configuration with `HostName`,
+`Port` and `IdentityFile`, rather than relying on `NIX_SSHOPTS`.
 
 When the local Nix daemon performs builds, configure its SSH identity and
 known_hosts (usually root's), rather than only your interactive user's files.
