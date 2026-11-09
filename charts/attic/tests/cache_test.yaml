@@ -1,0 +1,65 @@
+suite: Attic configuration and storage
+templates:
+  - deployment.yaml
+  - configmap.yaml
+  - pvc.yaml
+  - httproute.yaml
+  - secret.yaml
+tests:
+  - it: uses one writer and a persistent volume
+    template: deployment.yaml
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: spec.template.spec.volumes[1].persistentVolumeClaim.claimName
+          value: RELEASE-NAME-attic
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: ["-f", "/config/server.toml"]
+  - it: accepts external credentials without creating a secret
+    set:
+      auth.existingSecret: managed-key
+    template: secret.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: references external credentials
+    set:
+      auth.existingSecret: managed-key
+    template: deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[0].valueFrom.secretKeyRef.name
+          value: managed-key
+  - it: reuses an existing claim
+    set:
+      persistence.existingClaim: cache-data
+    template: pvc.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: supports ephemeral storage explicitly
+    set:
+      persistence.enabled: false
+    template: deployment.yaml
+    asserts:
+      - exists:
+          path: spec.template.spec.volumes[1].emptyDir
+  - it: leaves Gateway API optional
+    template: httproute.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: routes to the configured service port
+    set:
+      httpRoute.enabled: true
+      httpRoute.parentRefs: [{name: public}]
+      httpRoute.hostnames: [cache.example.com]
+      service.port: 80
+    template: httproute.yaml
+    asserts:
+      - equal:
+          path: spec.rules[0].backendRefs[0].port
+          value: 80

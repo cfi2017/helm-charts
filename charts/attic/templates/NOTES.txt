@@ -1,0 +1,4 @@
+Create the authentication Secret before starting Attic:
+  {{ default (printf "%s-auth" (include "attic.fullname" .)) .Values.auth.existingSecret }}
+with key {{ .Values.auth.secretKey }} containing a base64-encoded RSA PEM PKCS1 key.
+See charts/attic/CONFIGURATION.md for setup and client examples.
