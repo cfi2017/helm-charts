@@ -22,7 +22,7 @@ jobs:
     - name: install helm unittest
       run: |
         helm env
-        helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.0.3
+        bash hack/ci/github/setup/helm-unittest.sh
 
     - uses: actions/setup-python@v7
       with:
@@ -56,7 +56,7 @@ jobs:
       - name: install helm unittest
         run: |
           helm env
-          helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.0.3
+          bash hack/ci/github/setup/helm-unittest.sh
 
       - uses: actions/setup-python@v7
         with:
