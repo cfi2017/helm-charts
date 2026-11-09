@@ -13,7 +13,7 @@ readonly yq_url="https://github.com/mikefarah/yq/releases/download/v$yq_version/
 set +e
 
 if [[ ! -x `which yq` ]]; then
-   curl -L -o $yq_bin $yq_url
+   github_release_asset mikefarah/yq "v$yq_version" yq_linux_amd64 > "$yq_bin" || err "Could not download yq."
    chmod +x $yq_bin
    [[ ! -x $yq_bin ]] && err "Could not install yq binary."
 fi

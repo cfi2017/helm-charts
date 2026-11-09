@@ -16,7 +16,7 @@ env | grep helm
 set +e
 
 if [[ ! -x `which helm-docs` ]]; then
-  curl -L -o - $helm_docs_url | tar -C $helm_docs_target -zxf -
+  github_release_asset norwoodj/helm-docs "v$helm_docs_version" "helm-docs_${helm_docs_version}_Linux_x86_64.tar.gz" | tar -C "$helm_docs_target" -zxf - || err "Could not download helm-docs."
   chmod +x $helm_docs_bin
   [[ ! -x $helm_docs_bin ]] && err "Could not install helm-docs binary. See $helm_docs_docs for info."
 fi
