@@ -20,6 +20,8 @@ jobs:
         version: v3.17.4
 
     - name: install helm unittest
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         helm env
         bash hack/ci/github/setup/helm-unittest.sh
@@ -58,6 +60,8 @@ jobs:
           version: v3.17.4
 
       - name: install helm unittest
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           helm env
           bash hack/ci/github/setup/helm-unittest.sh
@@ -126,7 +130,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           gh run view 42581019006 --job 129039492100 --log-failed > /tmp/previous-failure.log
-          message=$(tail -n 70 /tmp/previous-failure.log)
+          message=$(tail -n 20 /tmp/previous-failure.log | cut -f3-)
           message=${message//'%'/'%25'}
           message=${message//$'\r'/'%0D'}
           message=${message//$'\n'/'%0A'}
