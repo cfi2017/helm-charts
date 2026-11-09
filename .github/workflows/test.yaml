@@ -33,7 +33,7 @@ jobs:
         python-version:  '3.x'
 
     - name: Setup environment for pre-commit
-      run: hack/ci/github/setup/pre-commit.sh
+      run: bash hack/ci/github/run-with-summary.sh bash hack/ci/github/setup/pre-commit.sh
 
     - uses: actions/cache@v6
       with:
@@ -42,7 +42,7 @@ jobs:
 
     - name: Run pre-commit
       run: |
-        pre-commit run --show-diff-on-failure --color=always --files $(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)
+        bash hack/ci/github/run-with-summary.sh pre-commit run --show-diff-on-failure --color=always --files $(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)
 
   lint-test:
     name: Lint and Install
@@ -71,10 +71,10 @@ jobs:
           python-version: '3.x'
 
       - name: Install chart-testing
-        run: bash hack/ci/github/setup/chart-testing.sh
+        run: bash hack/ci/github/run-with-summary.sh bash hack/ci/github/setup/chart-testing.sh
 
       - name: Install Artifact Hub CLI tool
-        run: hack/sh/deps/ah.sh
+        run: bash hack/ci/github/run-with-summary.sh bash hack/sh/deps/ah.sh
 
       - name: Run chart-testing (list-changed)
         id: list-changed
@@ -85,34 +85,15 @@ jobs:
           fi
 
       - name: Run chart-testing (lint)
-        run: ct --config=hack/chart-testing/ct.yaml lint
+        run: bash hack/ci/github/run-with-summary.sh ct --config=hack/chart-testing/ct.yaml lint
 
       - name: Create kind cluster
         uses: helm/kind-action@v1.15.2
         if: steps.list-changed.outputs.changed == 'true'
 
       - name: Setup cluster for chart-testing (install)
-        run: hack/deploy/init.sh
+        run: bash hack/ci/github/run-with-summary.sh bash hack/deploy/init.sh
         if: steps.list-changed.outputs.changed == 'true'
 
       - name: Run chart-testing (install)
-        run: ct --config=hack/chart-testing/ct-install.yaml install
-
-  diagnose-setup:
-    name: Diagnose previous CI setup failure
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-    steps:
-      - name: Read failed setup logs
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh run view 42581998071 --job 129042699993 --log-failed > /tmp/previous-failure.log
-          message=$(tail -n 20 /tmp/previous-failure.log | cut -f3-)
-          message=${message//'%'/'%25'}
-          message=${message//$'\r'/'%0D'}
-          message=${message//$'\n'/'%0A'}
-          printf '::warning title=Previous setup failure::%s\n' "$message"
+        run: bash hack/ci/github/run-with-summary.sh ct --config=hack/chart-testing/ct-install.yaml install
