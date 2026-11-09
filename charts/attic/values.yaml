@@ -1,0 +1,46 @@
+nameOverride: ""
+fullnameOverride: ""
+image:
+  repository: ghcr.io/zhaofengli/attic
+  tag: latest
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+# Existing secret containing a base64-encoded RSA PEM PKCS1 private key.
+auth:
+  existingSecret: ""
+  secretKey: token-rs256-secret-base64
+# Optional secret with ATTIC_SERVER_DATABASE_URL or AWS credentials.
+envFrom: []
+service:
+  type: ClusterIP
+  port: 8080
+persistence:
+  enabled: true
+  existingClaim: ""
+  size: 20Gi
+  storageClass: null
+  accessModes: [ReadWriteOnce]
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+httpRoute:
+  enabled: false
+  parentRefs: []
+  hostnames: []
+# Raw Attic TOML. Credentials belong in secrets, not this ConfigMap.
+config: |
+  listen = "[::]:8080"
+  allowed-hosts = []
+  [database]
+  url = "sqlite:///data/server.db?mode=rwc"
+  [storage]
+  type = "local"
+  path = "/data/storage"
+  [chunking]
+  nar-size-threshold = 65536
+  min-size = 16384
+  avg-size = 65536
+  max-size = 262144
+  [compression]
+  type = "zstd"

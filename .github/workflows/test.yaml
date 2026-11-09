@@ -6,6 +6,8 @@ on:
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v7
       with:
@@ -20,16 +22,18 @@ jobs:
         version: v3.17.4
 
     - name: install helm unittest
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         helm env
-        helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.0.3
+        bash hack/ci/github/setup/helm-unittest.sh
 
     - uses: actions/setup-python@v7
       with:
         python-version:  '3.x'
 
     - name: Setup environment for pre-commit
-      run: hack/ci/github/setup/pre-commit.sh
+      run: bash hack/ci/github/run-with-summary.sh bash hack/ci/github/setup/pre-commit.sh
 
     - uses: actions/cache@v6
       with:
@@ -38,11 +42,13 @@ jobs:
 
     - name: Run pre-commit
       run: |
-        pre-commit run --show-diff-on-failure --color=always --files $(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)
+        bash hack/ci/github/run-with-summary.sh pre-commit run --show-diff-on-failure --color=always --files $(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)
 
   lint-test:
     name: Lint and Install
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -54,19 +60,21 @@ jobs:
           version: v3.17.4
 
       - name: install helm unittest
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           helm env
-          helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.0.3
+          bash hack/ci/github/setup/helm-unittest.sh
 
       - uses: actions/setup-python@v7
         with:
           python-version: '3.x'
 
       - name: Install chart-testing
-        uses: helm/chart-testing-action@v2.9.0
+        run: bash hack/ci/github/run-with-summary.sh bash hack/ci/github/setup/chart-testing.sh
 
       - name: Install Artifact Hub CLI tool
-        run: hack/sh/deps/ah.sh
+        run: bash hack/ci/github/run-with-summary.sh bash hack/sh/deps/ah.sh
 
       - name: Run chart-testing (list-changed)
         id: list-changed
@@ -77,15 +85,15 @@ jobs:
           fi
 
       - name: Run chart-testing (lint)
-        run: ct --config=hack/chart-testing/ct.yaml lint
+        run: bash hack/ci/github/run-with-summary.sh ct --config=hack/chart-testing/ct.yaml lint
 
       - name: Create kind cluster
         uses: helm/kind-action@v1.15.2
         if: steps.list-changed.outputs.changed == 'true'
 
       - name: Setup cluster for chart-testing (install)
-        run: hack/deploy/init.sh
+        run: bash hack/ci/github/run-with-summary.sh bash hack/deploy/init.sh
         if: steps.list-changed.outputs.changed == 'true'
 
       - name: Run chart-testing (install)
-        run: ct --config=hack/chart-testing/ct-install.yaml install
+        run: bash hack/ci/github/run-with-summary.sh ct --config=hack/chart-testing/ct-install.yaml install

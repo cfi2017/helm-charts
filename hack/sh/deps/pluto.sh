@@ -13,7 +13,7 @@ readonly pluto_url="https://github.com/FairwindsOps/pluto/releases/download/v$pl
 set +e
 
 if [[ ! -x `which pluto` ]]; then
-   curl -L -o - $pluto_url | tar -C $pluto_target -zxf -
+   github_release_asset FairwindsOps/pluto "v$pluto_version" "pluto_${pluto_version}_linux_amd64.tar.gz" | tar -C "$pluto_target" -zxf - || err "Could not download pluto."
    chmod +x $pluto_bin
    [[ ! -x `which pluto` ]] && err "Could not install pluto binary."
 fi
