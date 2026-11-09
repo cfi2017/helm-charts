@@ -70,9 +70,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      # Keep the same cosign version and signature identity as chart-testing-action v2.9.0.
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
-
       - name: Install chart-testing
         run: bash hack/ci/github/setup/chart-testing.sh
 
@@ -113,7 +110,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh run view 42580951851 --job 129039273495 --log-failed > /tmp/previous-failure.log
+          gh run view 42581998071 --job 129042699993 --log-failed > /tmp/previous-failure.log
           message=$(tail -n 20 /tmp/previous-failure.log | cut -f3-)
           message=${message//'%'/'%25'}
           message=${message//$'\r'/'%0D'}
