@@ -1,0 +1,46 @@
+nameOverride: ""
+fullnameOverride: ""
+image:
+  repository: nixos/nix
+  tag: "2.24.14"
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+ssh:
+  # Existing Secret with authorized_keys. Inline public keys are also supported.
+  existingSecret: ""
+  authorizedKeys: ""
+  # Host key is stored on the data PVC across worker restarts.
+  port: 22
+persistence:
+  enabled: true
+  existingClaim: ""
+  size: 50Gi
+  storageClass: null
+nixConfig: |
+  experimental-features = nix-command flakes
+  sandbox = false
+  max-jobs = auto
+  cores = 0
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+# The worker runs as root inside its pod; clients must be trusted.
+# No host mounts or privileged mode are required. See CONFIGURATION.md.
+scaleToZero:
+  enabled: true
+  idleSeconds: 300
+  startupTimeoutSeconds: 600
+  # One proxy replica is required to track all active connections.
+  image: python:3.13-alpine
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+service:
+  type: ClusterIP
+tcpRoute:
+  enabled: false
+  parentRefs: []

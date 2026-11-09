@@ -1,0 +1,15 @@
+{{- if .Values.tcpRoute.enabled }}
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: {{ include "nix-builder.fullname" . }}
+  labels:
+    {{- include "nix-builder.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    {{- toYaml .Values.tcpRoute.parentRefs | nindent 4 }}
+  rules:
+    - backendRefs:
+        - name: {{ include "nix-builder.fullname" . }}
+          port: {{ .Values.ssh.port }}
+{{- end }}

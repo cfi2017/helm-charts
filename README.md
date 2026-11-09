@@ -46,6 +46,7 @@ for more in-depth information.
 
 | Chart | Description | Version | App Version |
 | ----- | ----------- | ------- | ----------- |
+| [nix-builder](charts/nix-builder) | An SSH Nix remote builder with c... | ![Version: 0.x](https://img.shields.io/badge/version-0.x-brightgreen) |  ![App version: 2.2.x](https://img.shields.io/badge/app%20version-2.2.x-brightgreen) |
 
 ## Contributing
 

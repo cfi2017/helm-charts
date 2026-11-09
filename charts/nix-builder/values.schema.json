@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "ssh": {
+      "type": "object",
+      "properties": {
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "authorizedKeys": {"type": "string"},
+        "existingSecret": {"type": "string"}
+      }
+    },
+    "scaleToZero": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "idleSeconds": {"type": "integer", "minimum": 1},
+        "startupTimeoutSeconds": {"type": "integer", "minimum": 1}
+      }
+    },
+    "tcpRoute": {
+      "type": "object",
+      "properties": {"enabled": {"type": "boolean"}, "parentRefs": {"type": "array"}},
+      "if": {"properties": {"enabled": {"const": true}}, "required": ["enabled"]},
+      "then": {"properties": {"parentRefs": {"minItems": 1}}}
+    }
+  }
+}

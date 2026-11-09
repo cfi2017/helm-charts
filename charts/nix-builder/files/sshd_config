@@ -1,0 +1,18 @@
+Port 2222
+ListenAddress 0.0.0.0
+HostKey /data/ssh/ssh_host_ed25519_key
+AuthorizedKeysFile /keys/authorized_keys
+PermitRootLogin prohibit-password
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+AuthenticationMethods publickey
+UsePAM no
+AllowUsers root
+DisableForwarding yes
+PermitTTY no
+PermitUserEnvironment no
+ForceCommand /nix/var/nix/profiles/default/bin/nix-daemon --stdio
+ClientAliveInterval 60
+ClientAliveCountMax 3
+LoginGraceTime 30
+PidFile /run/sshd.pid

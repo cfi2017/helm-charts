@@ -1,0 +1,105 @@
+{{- if .Values.scaleToZero.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "nix-builder.fullname" . }}-proxy
+  labels:
+    {{- include "nix-builder.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "nix-builder.fullname" . }}-proxy
+  labels:
+    {{- include "nix-builder.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [apps]
+    resources: [deployments/scale]
+    resourceNames: [{{ include "nix-builder.fullname" . }}]
+    verbs: [patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "nix-builder.fullname" . }}-proxy
+  labels:
+    {{- include "nix-builder.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "nix-builder.fullname" . }}-proxy
+roleRef:
+  kind: Role
+  name: {{ include "nix-builder.fullname" . }}-proxy
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "nix-builder.fullname" . }}-proxy
+  labels:
+    {{- include "nix-builder.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "nix-builder.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: proxy
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        {{- include "nix-builder.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: proxy
+    spec:
+      serviceAccountName: {{ include "nix-builder.fullname" . }}-proxy
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+      containers:
+        - name: proxy
+          image: {{ .Values.scaleToZero.image | quote }}
+          command: [python, -u, /config/proxy.py]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: ssh
+              containerPort: 2222
+          # Kubelet TCP probes must never wake the worker.
+          readinessProbe:
+            exec:
+              command: [python, -c, "from pathlib import Path; exit(0 if Path('/tmp/ready').exists() else 1)"]
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: DEPLOYMENT
+              value: {{ include "nix-builder.fullname" . }}
+            - name: BACKEND_HOST
+              value: {{ include "nix-builder.fullname" . }}-worker
+            - name: IDLE_SECONDS
+              value: {{ .Values.scaleToZero.idleSeconds | quote }}
+            - name: STARTUP_TIMEOUT_SECONDS
+              value: {{ .Values.scaleToZero.startupTimeoutSeconds | quote }}
+          resources:
+            {{- toYaml .Values.scaleToZero.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "nix-builder.fullname" . }}
+{{- end }}

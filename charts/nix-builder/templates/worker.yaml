@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "nix-builder.fullname" . }}
+  labels:
+    {{- include "nix-builder.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.scaleToZero.enabled }}
+  replicas: 1
+  {{- end }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "nix-builder.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        {{- include "nix-builder.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: initialize-store
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "/config/worker.sh"]
+          env:
+            - name: INITIALIZE_STORE
+              value: "1"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /config
+      containers:
+        - name: builder
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "/config/worker.sh"]
+          ports:
+            - name: ssh
+              containerPort: 2222
+          # Exec probes avoid opening SSH sessions through the activator.
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "test -s /run/sshd.pid && kill -0 $(cat /run/sshd.pid)"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /nix
+              subPath: nix
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /config
+            - name: config
+              mountPath: /etc/nix/nix.conf
+              subPath: nix.conf
+            - name: keys
+              mountPath: /keys
+              readOnly: true
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (include "nix-builder.fullname" .) .Values.persistence.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "nix-builder.fullname" . }}
+        - name: keys
+          secret:
+            secretName: {{ default (printf "%s-keys" (include "nix-builder.fullname" .)) .Values.ssh.existingSecret }}
+            defaultMode: 0400
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
