@@ -1,0 +1,113 @@
+suite: SSH builder activation and routing
+templates:
+  - worker.yaml
+  - configmap.yaml
+  - service.yaml
+  - tcproute.yaml
+  - proxy.yaml
+  - pvc.yaml
+tests:
+  - it: routes clients through activator
+    template: service.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: proxy
+  - it: exposes a separate worker service
+    template: service.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: worker
+  - it: leaves replicas to the activator on upgrades
+    template: worker.yaml
+    asserts:
+      - notExists:
+          path: spec.replicas
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: spec.template.spec.automountServiceAccountToken
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].subPath
+          value: nix
+  - it: runs one worker without activation
+    set:
+      scaleToZero.enabled: false
+    template: worker.yaml
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+  - it: removes proxy and RBAC when disabled
+    set:
+      scaleToZero.enabled: false
+    template: proxy.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: connects directly when activation is disabled
+    set:
+      scaleToZero.enabled: false
+    template: service.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: worker
+  - it: restricts scaling to this worker
+    template: proxy.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: rules[0].resources
+          value: [deployments/scale]
+      - equal:
+          path: rules[0].resourceNames
+          value: [RELEASE-NAME-nix-builder]
+      - equal:
+          path: rules[0].verbs
+          value: [patch]
+  - it: keeps a single activator during updates
+    template: proxy.yaml
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+  - it: leaves TCPRoute optional
+    template: tcproute.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: routes SSH through configured Gateway listener
+    set:
+      tcpRoute.enabled: true
+      tcpRoute.parentRefs: [{name: public, sectionName: nix-ssh}]
+      ssh.port: 2222
+    template: tcproute.yaml
+    asserts:
+      - equal:
+          path: apiVersion
+          value: gateway.networking.k8s.io/v1alpha2
+      - equal:
+          path: spec.parentRefs[0].sectionName
+          value: nix-ssh
+      - equal:
+          path: spec.rules[0].backendRefs[0].port
+          value: 2222
+  - it: reuses an externally managed PVC
+    set:
+      persistence.existingClaim: nix-store
+    template: pvc.yaml
+    asserts:
+      - hasDocuments:
+          count: 0

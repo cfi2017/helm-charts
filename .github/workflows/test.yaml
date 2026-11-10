@@ -32,6 +32,10 @@ jobs:
       with:
         python-version:  '3.x'
 
+    - name: Test Nix builder TCP activator
+      if: hashFiles('charts/nix-builder/files/proxy.py') != ''
+      run: python3 hack/ci/tests/nix-builder-proxy.py
+
     - name: Setup environment for pre-commit
       run: bash hack/ci/github/run-with-summary.sh bash hack/ci/github/setup/pre-commit.sh
 
@@ -97,3 +101,11 @@ jobs:
 
       - name: Run chart-testing (install)
         run: bash hack/ci/github/run-with-summary.sh ct --config=hack/chart-testing/ct-install.yaml install
+
+  nix-builder-worker:
+    name: Nix remote build smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build a derivation through SSH and verify persistent host key
+        run: bash hack/ci/github/run-with-summary.sh bash hack/ci/tests/nix-builder-worker.sh

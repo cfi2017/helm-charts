@@ -1,0 +1,4 @@
+Supply ssh.existingSecret (key authorized_keys) or ssh.authorizedKeys before connecting.
+Remote builders use ssh-ng://root@HOST:PORT with public-key authentication.
+Verify the worker host key out of band before adding it to known_hosts.
+See charts/nix-builder/CONFIGURATION.md for Gateway and scale-to-zero setup.

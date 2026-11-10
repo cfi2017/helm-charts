@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "nix-builder.fullname" . }}
+  labels:
+    {{- include "nix-builder.labels" . | nindent 4 }}
+data:
+  worker.sh: |
+    {{- .Files.Get "files/worker.sh" | nindent 4 }}
+  sshd_config: |
+    {{- .Files.Get "files/sshd_config" | nindent 4 }}
+  nix.conf: |
+    {{- .Values.nixConfig | nindent 4 }}
+  proxy.py: |
+    {{- .Files.Get "files/proxy.py" | nindent 4 }}
