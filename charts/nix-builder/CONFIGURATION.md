@@ -5,6 +5,19 @@ kubectl create secret generic builder-keys --from-file=authorized_keys=$HOME/.ss
 helm install builder ./charts/nix-builder --set ssh.existingSecret=builder-keys
 ```
 
+Alternatively, set `ssh.authorizedKeys` to your public key or a multiline list of
+public keys. Inline key changes trigger a worker rollout on Helm upgrade.
+Keys are copied from the Secret into a root-owned runtime directory at startup
+so OpenSSH can enforce `StrictModes` with Kubernetes Secret volume permissions.
+After updating an externally managed Secret, restart the worker to load the keys:
+
+```sh
+kubectl rollout restart deployment/builder-nix-builder
+```
+
+Worker restarts interrupt active builds. Apply key rotations while the builder
+is idle.
+
 Only trusted clients should receive access: SSH is restricted to
 `nix-daemon --stdio` (the `ssh-ng` protocol), but that protocol grants full
 control of the container's Nix store. Passwords, forwarding and interactive

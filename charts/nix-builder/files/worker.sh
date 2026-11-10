@@ -17,6 +17,11 @@ if [ "${INITIALIZE_STORE:-}" = 1 ]; then
   exit 0
 fi
 mkdir -p /run/sshd /var/empty /data/ssh
+# Secret volume directories can be world-writable. Keep StrictModes enabled
+# and copy the projected file into a private, root-owned runtime directory.
+chown 0:0 /run/sshd
+chmod 0700 /run/sshd
+install -m 0600 -o 0 -g 0 /keys/authorized_keys /run/sshd/authorized_keys
 if ! grep -q '^sshd:' /etc/passwd; then
   printf 'sshd:x:65533:65534:SSH privilege separation:/var/empty:/bin/sh\n' >> /etc/passwd
 fi

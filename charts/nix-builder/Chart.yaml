@@ -2,7 +2,7 @@ apiVersion: v2
 name: nix-builder
 description: An SSH Nix remote builder with connection-triggered scale to zero.
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "2.24.14"
 kubeVersion: ">=1.26.0-0"
 home: https://nix.dev/manual/nix/2.24/advanced-topics/distributed-builds
