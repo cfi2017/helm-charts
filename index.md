@@ -47,6 +47,7 @@ for more in-depth information.
 | Chart | Description | Version | App Version |
 | ----- | ----------- | ------- | ----------- |
 | [attic](https://github.com/cfi2017/helm-charts/tree/main/charts/attic) | A self-hosted Nix binary cache b... | ![Version: 0.x](https://img.shields.io/badge/version-0.x-brightgreen) |  ![App version: latest](https://img.shields.io/badge/app%20version-latest-brightgreen) |
+| [nix-builder](https://github.com/cfi2017/helm-charts/tree/main/charts/nix-builder) | An SSH Nix remote builder with c... | ![Version: 0.x](https://img.shields.io/badge/version-0.x-brightgreen) |  ![App version: 2.2.x](https://img.shields.io/badge/app%20version-2.2.x-brightgreen) |
 
 ## Contributing
 
