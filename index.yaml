@@ -609,6 +609,25 @@ entries:
     urls:
     - https://github.com/cfi2017/helm-charts/releases/download/midpoint-0.1.0/midpoint-0.1.0.tgz
     version: 0.1.0
+  nix-builder:
+  - apiVersion: v2
+    appVersion: 2.24.14
+    created: "2026-11-10T06:54:28.847681133Z"
+    description: An SSH Nix remote builder with connection-triggered scale to zero.
+    digest: 9cf11354daf8269f9aac20f6b0af1ecd61c65a02cd96adebbccb469fd964d929
+    home: https://nix.dev/manual/nix/2.24/advanced-topics/distributed-builds
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - email: info@swiss.dev
+      name: cfi2017
+      url: https://github.com/cfi2017
+    name: nix-builder
+    sources:
+    - https://github.com/NixOS/nix
+    type: application
+    urls:
+    - https://github.com/cfi2017/helm-charts/releases/download/nix-builder-0.1.0/nix-builder-0.1.0.tgz
+    version: 0.1.0
   opencve:
   - annotations:
       artifacthub.io/links: |-
@@ -812,4 +831,4 @@ entries:
     urls:
     - https://github.com/cfi2017/helm-charts/releases/download/qbittorrent-6.13.3/qbittorrent-6.13.3.tgz
     version: 6.13.3
-generated: "2026-11-09T11:47:35.601367925Z"
+generated: "2026-11-10T06:54:28.847716176Z"
