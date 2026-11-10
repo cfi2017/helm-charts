@@ -2,3 +2,8 @@ Supply ssh.existingSecret (key authorized_keys) or ssh.authorizedKeys before con
 Remote builders use ssh-ng://root@HOST:PORT with public-key authentication.
 Verify the worker host key out of band before adding it to known_hosts.
 See charts/nix-builder/CONFIGURATION.md for Gateway and scale-to-zero setup.
+{{- if (and .Values.attic .Values.attic.enabled) }}
+Attic uploads target {{ .Values.attic.cache }} using Secret {{ .Values.attic.auth.existingSecret }}.
+The worker stays running if its final catch-up upload fails.
+See charts/nix-builder/ATTIC.md for cache and laptop configuration.
+{{- end }}

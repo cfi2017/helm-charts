@@ -26,7 +26,7 @@ spec:
         app.kubernetes.io/component: worker
     spec:
       automountServiceAccountToken: false
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: {{ if (and .Values.attic .Values.attic.enabled) }}{{ max 60 (add .Values.attic.drainTimeoutSeconds 30) }}{{ else }}60{{ end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -44,6 +44,36 @@ spec:
               mountPath: /data
             - name: config
               mountPath: /config
+        {{- if (and .Values.attic .Values.attic.enabled) }}
+        - name: install-attic
+          image: "{{ .Values.attic.toolsImage.repository }}:{{ .Values.attic.toolsImage.tag }}"
+          imagePullPolicy: {{ .Values.attic.toolsImage.pullPolicy }}
+          command: ["/bin/sh", "/config/install-attic.sh"]
+          volumeMounts:
+            - name: data
+              mountPath: /shared-nix
+              subPath: nix
+            - name: attic-bin
+              mountPath: /attic-bin
+            - name: config
+              mountPath: /config
+        - name: register-attic
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "/config/worker.sh"]
+          env:
+            - name: REGISTER_ATTIC
+              value: "1"
+          volumeMounts:
+            - name: data
+              mountPath: /nix
+              subPath: nix
+            - name: attic-bin
+              mountPath: /attic-bin
+              readOnly: true
+            - name: config
+              mountPath: /config
+        {{- end }}
       containers:
         - name: builder
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -72,6 +102,60 @@ spec:
             - name: keys
               mountPath: /keys
               readOnly: true
+            {{- if (and .Values.attic .Values.attic.enabled) }}
+            - name: attic-runtime
+              mountPath: /attic-runtime
+              readOnly: true
+            {{- end }}
+        {{- if (and .Values.attic .Values.attic.enabled) }}
+        - name: attic-uploader
+          image: {{ .Values.attic.controllerImage | quote }}
+          command: [python, -u, /config/attic-uploader.py]
+          ports:
+            - name: attic-control
+              containerPort: 8090
+          env:
+            - name: ATTIC_ENDPOINT
+              value: {{ .Values.attic.endpoint | quote }}
+            - name: ATTIC_CACHE
+              value: {{ .Values.attic.cache | quote }}
+            - name: ATTIC_JOBS
+              value: {{ .Values.attic.jobs | quote }}
+            - name: DRAIN_TIMEOUT
+              value: {{ .Values.attic.drainTimeoutSeconds | quote }}
+            - name: RETRY_SECONDS
+              value: {{ .Values.attic.retrySeconds | quote }}
+            - name: CATCH_UP_INTERVAL
+              value: {{ .Values.attic.catchUpIntervalSeconds | quote }}
+            - name: CONFIGURE_NIX
+              value: {{ .Values.attic.configureNix | quote }}
+            - name: SSL_CERT_FILE
+              value: /nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: attic-control
+          lifecycle:
+            preStop:
+              exec:
+                command: [python, /config/attic-uploader.py, --drain]
+          resources:
+            {{- toYaml .Values.attic.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /nix
+              subPath: nix
+            - name: attic-bin
+              mountPath: /attic-bin
+              readOnly: true
+            - name: attic-runtime
+              mountPath: /attic-runtime
+            - name: attic-auth
+              mountPath: /attic-auth
+              readOnly: true
+            - name: config
+              mountPath: /config
+        {{- end }}
       volumes:
         - name: data
           {{- if .Values.persistence.enabled }}
@@ -87,6 +171,19 @@ spec:
           secret:
             secretName: {{ default (printf "%s-keys" (include "nix-builder.fullname" .)) .Values.ssh.existingSecret }}
             defaultMode: 0400
+        {{- if (and .Values.attic .Values.attic.enabled) }}
+        - name: attic-bin
+          emptyDir: {}
+        - name: attic-runtime
+          emptyDir: {}
+        - name: attic-auth
+          secret:
+            secretName: {{ required "attic.auth.existingSecret is required" .Values.attic.auth.existingSecret }}
+            defaultMode: 0400
+            items:
+              - key: {{ .Values.attic.auth.secretKey }}
+                path: token
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

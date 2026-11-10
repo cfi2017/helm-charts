@@ -3,6 +3,8 @@ import asyncio
 import importlib.util
 from pathlib import Path
 import sys
+import threading
+from unittest.mock import Mock
 
 sys.dont_write_bytecode = True
 import unittest
@@ -147,6 +149,91 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
         await self.activator.scale(1)
         await self.activator.scale(0)
         self.assertEqual(self.scaler.calls, [1, 0])
+
+    async def test_upload_failure_keeps_worker_running(self):
+        self.activator.desired = 1
+        self.activator.last_close = 0
+        uploader = Mock()
+        uploader.drain.side_effect = OSError("cache offline")
+        self.activator.uploader = uploader
+        with self.assertRaises(OSError):
+            await self.activator.idle_check()
+        self.assertEqual(self.scaler.calls, [])
+        self.assertEqual(self.activator.desired, 1)
+
+    async def test_successful_drain_is_acknowledged_before_scaling_to_zero(self):
+        self.activator.desired = 1
+        self.activator.last_close = 0
+        uploader = Mock()
+        uploader.drain.side_effect = lambda: self.assertEqual(self.scaler.calls, [])
+        self.activator.uploader = uploader
+        await self.activator.idle_check()
+        uploader.drain.assert_called_once()
+        uploader.resume.assert_not_called()
+        self.assertEqual(self.scaler.calls, [0])
+        self.assertFalse(self.activator.draining)
+
+    async def test_failed_scale_down_resumes_watching(self):
+        self.activator.desired = 1
+        self.activator.last_close = 0
+        self.scaler.fail = True
+        self.activator.uploader = Mock()
+        with self.assertRaises(OSError):
+            await self.activator.idle_check()
+        self.activator.uploader.drain.assert_called_once()
+        self.activator.uploader.resume.assert_called_once()
+        self.assertEqual(self.activator.desired, 1)
+
+    async def test_already_stopped_worker_needs_no_uploader_request(self):
+        self.activator.desired = 0
+        self.activator.last_close = 0
+        self.activator.uploader = Mock()
+        await self.activator.idle_check()
+        self.activator.uploader.drain.assert_not_called()
+
+    async def test_new_build_during_uploads_cancels_scale_down(self):
+        events = []
+        started, release = threading.Event(), threading.Event()
+
+        def drain():
+            events.append("drain")
+            started.set()
+            if not release.wait(2):
+                raise TimeoutError("test drain stalled")
+
+        uploader = Mock()
+        uploader.drain.side_effect = drain
+        uploader.resume.side_effect = lambda: events.append("resume")
+        self.activator.uploader = uploader
+        self.activator.desired = 1
+        self.activator.last_close = 0
+        self.scaler.set_replicas = lambda replicas: events.append("scale " + str(replicas))
+
+        async def backend(reader, writer):
+            payload = await reader.read()
+            events.append("build")
+            writer.write(payload)
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+
+        self.activator.port = await self.listen(backend)
+        port = await self.listen(self.activator.handle)
+        idle = asyncio.create_task(self.activator.idle_check())
+        self.assertTrue(await asyncio.to_thread(started.wait, 1))
+        reader, writer = await asyncio.open_connection("127.0.0.1", port)
+        writer.write(b"new build")
+        await writer.drain()
+        writer.write_eof()
+        self.assertEqual(await asyncio.wait_for(reader.read(), 2), b"new build")
+        writer.close()
+        await writer.wait_closed()
+        await asyncio.sleep(0.01)
+        self.assertEqual(events, ["drain", "build"])
+        release.set()
+        await idle
+        self.assertEqual(events, ["drain", "build", "resume"])
+        self.assertEqual(self.activator.desired, 1)
 
 
 if __name__ == "__main__":
