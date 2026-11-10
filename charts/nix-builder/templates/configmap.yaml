@@ -11,5 +11,14 @@ data:
     {{- .Files.Get "files/sshd_config" | nindent 4 }}
   nix.conf: |
     {{- .Values.nixConfig | nindent 4 }}
+    {{- if and (and .Values.attic .Values.attic.enabled) .Values.attic.configureNix }}
+    !include /attic-runtime/nix/nix.conf
+    {{- end }}
   proxy.py: |
     {{- .Files.Get "files/proxy.py" | nindent 4 }}
+  {{- if (and .Values.attic .Values.attic.enabled) }}
+  install-attic.sh: |
+    {{- .Files.Get "files/install-attic.sh" | nindent 4 }}
+  attic-uploader.py: |
+    {{- .Files.Get "files/attic-uploader.py" | nindent 4 }}
+  {{- end }}

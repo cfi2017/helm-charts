@@ -13,7 +13,7 @@ spec:
   selector:
     {{- include "nix-builder.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: {{ ternary "proxy" "worker" .Values.scaleToZero.enabled }}
-{{- if .Values.scaleToZero.enabled }}
+{{- if or .Values.scaleToZero.enabled (and .Values.attic .Values.attic.enabled) }}
 ---
 apiVersion: v1
 kind: Service
@@ -26,6 +26,11 @@ spec:
     - name: ssh
       port: 2222
       targetPort: ssh
+    {{- if (and .Values.attic .Values.attic.enabled) }}
+    - name: attic-control
+      port: 8090
+      targetPort: attic-control
+    {{- end }}
   selector:
     {{- include "nix-builder.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: worker

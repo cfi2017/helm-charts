@@ -1,0 +1,117 @@
+suite: Attic uploads and safe shutdown
+templates:
+  - configmap.yaml
+  - secret.yaml
+  - worker.yaml
+  - proxy.yaml
+  - service.yaml
+set:
+  attic:
+    enabled: true
+    endpoint: https://cache.example.com/
+    cache: efi-nixos
+    auth:
+      existingSecret: attic-credentials
+tests:
+  - it: prepares the tools before starting the uploader on the shared store
+    template: worker.yaml
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.initContainers
+          count: 3
+      - equal:
+          path: spec.template.spec.initContainers[1].name
+          value: install-attic
+      - equal:
+          path: spec.template.spec.initContainers[2].name
+          value: register-attic
+      - equal:
+          path: spec.template.spec.containers[1].name
+          value: attic-uploader
+      - equal:
+          path: spec.template.spec.containers[1].volumeMounts[0].subPath
+          value: nix
+  - it: projects only the configured existing secret key
+    template: worker.yaml
+    set:
+      attic.auth.secretKey: upload-token
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[5].secret
+          value:
+            secretName: attic-credentials
+            defaultMode: 256
+            items:
+              - key: upload-token
+                path: token
+  - it: extends builder configuration from private runtime files
+    template: configmap.yaml
+    asserts:
+      - matchRegex:
+          path: data["nix.conf"]
+          pattern: '!include /attic-runtime/nix/nix.conf'
+  - it: allows upload-only operation
+    set:
+      attic.configureNix: false
+    template: configmap.yaml
+    asserts:
+      - notMatchRegex:
+          path: data["nix.conf"]
+          pattern: '!include'
+  - it: gives the uploader time to flush on pod termination
+    template: worker.yaml
+    set:
+      attic.drainTimeoutSeconds: 900
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 930
+      - equal:
+          path: spec.template.spec.containers[1].lifecycle.preStop.exec.command
+          value: [python, /config/attic-uploader.py, --drain]
+  - it: authenticates proxy control calls using the mounted secret
+    template: proxy.yaml
+    documentIndex: 3
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[2].secret.secretName
+          value: attic-credentials
+      - equal:
+          path: spec.template.spec.volumes[2].secret.items
+          value: [{key: token, path: token}]
+  - it: permits only scoped scale reads and writes
+    template: proxy.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: rules[0].verbs
+          value: [get, patch]
+      - equal:
+          path: rules[0].resourceNames
+          value: [RELEASE-NAME-nix-builder]
+  - it: works with a single always-on worker
+    set:
+      scaleToZero.enabled: false
+    template: service.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.ports[1].name
+          value: attic-control
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: worker
+  - it: has no uploader when disabled
+    set:
+      attic.enabled: false
+    template: worker.yaml
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 1
+      - lengthEqual:
+          path: spec.template.spec.initContainers
+          count: 1
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 60

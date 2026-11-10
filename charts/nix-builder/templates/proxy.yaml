@@ -16,7 +16,7 @@ rules:
   - apiGroups: [apps]
     resources: [deployments/scale]
     resourceNames: [{{ include "nix-builder.fullname" . }}]
-    verbs: [patch]
+    verbs: {{ if (and .Values.attic .Values.attic.enabled) }}[get, patch]{{ else }}[patch]{{ end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -89,6 +89,12 @@ spec:
               value: {{ .Values.scaleToZero.idleSeconds | quote }}
             - name: STARTUP_TIMEOUT_SECONDS
               value: {{ .Values.scaleToZero.startupTimeoutSeconds | quote }}
+            {{- if (and .Values.attic .Values.attic.enabled) }}
+            - name: UPLOADER_URL
+              value: http://{{ include "nix-builder.fullname" . }}-worker:8090
+            - name: DRAIN_TIMEOUT
+              value: {{ .Values.attic.drainTimeoutSeconds | quote }}
+            {{- end }}
           resources:
             {{- toYaml .Values.scaleToZero.resources | nindent 12 }}
           volumeMounts:
@@ -96,10 +102,24 @@ spec:
               mountPath: /tmp
             - name: config
               mountPath: /config
+            {{- if (and .Values.attic .Values.attic.enabled) }}
+            - name: attic-auth
+              mountPath: /attic-auth
+              readOnly: true
+            {{- end }}
       volumes:
         - name: tmp
           emptyDir: {}
         - name: config
           configMap:
             name: {{ include "nix-builder.fullname" . }}
+        {{- if (and .Values.attic .Values.attic.enabled) }}
+        - name: attic-auth
+          secret:
+            secretName: {{ .Values.attic.auth.existingSecret }}
+            defaultMode: 0440
+            items:
+              - key: {{ .Values.attic.auth.secretKey }}
+                path: token
+        {{- end }}
 {{- end }}

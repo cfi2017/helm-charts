@@ -8,6 +8,14 @@ templates:
   - proxy.yaml
   - pvc.yaml
 tests:
+  - it: tolerates older release values without the optional attic section
+    set:
+      attic: null
+    template: worker.yaml
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 1
   - it: rolls out inline key updates
     set:
       ssh.authorizedKeys: ssh-ed25519 AAAAexample builder

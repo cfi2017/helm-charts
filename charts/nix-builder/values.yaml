@@ -25,6 +25,32 @@ resources: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
+# Optional Attic publisher. The target cache must already exist.
+attic:
+  enabled: false
+  endpoint: ""
+  # One concrete cache name, never a token permission pattern such as efi-*.
+  cache: ""
+  auth:
+    existingSecret: ""
+    secretKey: token
+  toolsImage:
+    repository: nixpkgs/attic
+    # Use nixos-26.05-aarch64-linux on ARM64 nodes.
+    tag: nixos-26.05-x86_64-linux
+    pullPolicy: IfNotPresent
+  controllerImage: python:3.13-alpine
+  # Discover the cache public key, substituter and download token with attic use.
+  configureNix: true
+  jobs: 5
+  retrySeconds: 30
+  # Reconcile missed watcher events and failed queued paths periodically.
+  catchUpIntervalSeconds: 300
+  drainTimeoutSeconds: 600
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
 # The worker runs as root inside its pod; clients must be trusted.
 # No host mounts or privileged mode are required. See CONFIGURATION.md.
 scaleToZero:

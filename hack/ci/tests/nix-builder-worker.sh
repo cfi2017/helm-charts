@@ -31,7 +31,18 @@ for attempt in 1 2; do
   docker run --rm --entrypoint /bin/sh \
     -v "$test_dir/config:/config:ro" -v "$volume:/data" \
     -e INITIALIZE_STORE=1 "$image" /config/worker.sh
+  if [[ "$attempt" == 1 ]]; then
+    # Simulate a PVC last used by 0.1.1, whose SSH setup edited store-backed
+    # passwd/shadow files. The second initialization must repair image files.
+    docker run --rm --entrypoint /bin/sh -v "$volume:/data" "$image" -ec '
+      for file in /etc/passwd /etc/shadow; do
+        source=$(readlink -f "$file")
+        printf "legacy modification\n" >> "/data$source"
+      done
+    '
+  fi
 done
+base_system=$(docker run --rm --entrypoint /bin/sh "$image" -c 'source=$(readlink -f /etc/passwd); printf "%s" "${source%/etc/passwd}"')
 worker=$(docker run -d --entrypoint /bin/sh \
   -v "$test_dir/config:/config:ro" \
   -v "$test_dir/config/nix.conf:/etc/nix/nix.conf:ro" \
@@ -42,6 +53,7 @@ for attempt in $(seq 1 30); do
   if docker exec "$worker" /bin/sh -c 'test -s /run/sshd.pid'; then break; fi
   sleep 1
 done
+docker exec "$worker" nix-store --verify-path "$base_system"
 [[ "$(docker exec "$worker" stat -c '%a' /keys)" == 777 ]]
 [[ "$(docker exec "$worker" stat -c '%u:%g:%a' /run/sshd)" == 0:0:700 ]]
 [[ "$(docker exec "$worker" stat -c '%u:%g:%a' /run/sshd/authorized_keys)" == 0:0:600 ]]

@@ -36,6 +36,10 @@ jobs:
       if: hashFiles('charts/nix-builder/files/proxy.py') != ''
       run: python3 hack/ci/tests/nix-builder-proxy.py
 
+    - name: Test Attic catch-up and shutdown coordination
+      if: hashFiles('charts/nix-builder/files/attic-uploader.py') != ''
+      run: python3 hack/ci/tests/nix-builder-attic.py
+
     - name: Setup environment for pre-commit
       run: bash hack/ci/github/run-with-summary.sh bash hack/ci/github/setup/pre-commit.sh
 
@@ -109,3 +113,12 @@ jobs:
       - uses: actions/checkout@v7
       - name: Build a derivation through SSH and verify persistent host key
         run: bash hack/ci/github/run-with-summary.sh bash hack/ci/tests/nix-builder-worker.sh
+
+  nix-builder-attic:
+    name: Attic publication and download smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify startup catch-up, publication, restart recovery and downloads
+        run: bash hack/ci/github/run-with-summary.sh bash hack/ci/tests/nix-builder-attic.sh

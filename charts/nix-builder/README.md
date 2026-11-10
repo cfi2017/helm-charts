@@ -1,6 +1,6 @@
 # nix-builder
 
-![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.24.14](https://img.shields.io/badge/AppVersion-2.24.14-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.24.14](https://img.shields.io/badge/AppVersion-2.24.14-informational?style=flat-square)
 
 An SSH Nix remote builder with connection-triggered scale to zero.
 
@@ -22,6 +22,22 @@ Kubernetes: `>=1.26.0-0`
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` |  |
+| attic.auth.existingSecret | string | `""` |  |
+| attic.auth.secretKey | string | `"token"` |  |
+| attic.cache | string | `""` |  |
+| attic.catchUpIntervalSeconds | int | `300` |  |
+| attic.configureNix | bool | `true` |  |
+| attic.controllerImage | string | `"python:3.13-alpine"` |  |
+| attic.drainTimeoutSeconds | int | `600` |  |
+| attic.enabled | bool | `false` |  |
+| attic.endpoint | string | `""` |  |
+| attic.jobs | int | `5` |  |
+| attic.resources.requests.cpu | string | `"10m"` |  |
+| attic.resources.requests.memory | string | `"128Mi"` |  |
+| attic.retrySeconds | int | `30` |  |
+| attic.toolsImage.pullPolicy | string | `"IfNotPresent"` |  |
+| attic.toolsImage.repository | string | `"nixpkgs/attic"` |  |
+| attic.toolsImage.tag | string | `"nixos-26.05-x86_64-linux"` |  |
 | fullnameOverride | string | `""` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.repository | string | `"nixos/nix"` |  |

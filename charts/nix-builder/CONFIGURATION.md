@@ -1,5 +1,8 @@
 # Remote Nix builds over SSH
 
+For automatic publication to an Attic cache and cache downloads on the builder
+and your laptop, see [Attic integration](ATTIC.md).
+
 ```sh
 kubectl create secret generic builder-keys --from-file=authorized_keys=$HOME/.ssh/id_ed25519.pub
 helm install builder ./charts/nix-builder --set ssh.existingSecret=builder-keys
