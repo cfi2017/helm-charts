@@ -2,11 +2,30 @@ suite: SSH builder activation and routing
 templates:
   - worker.yaml
   - configmap.yaml
+  - secret.yaml
   - service.yaml
   - tcproute.yaml
   - proxy.yaml
   - pvc.yaml
 tests:
+  - it: rolls out inline key updates
+    set:
+      ssh.authorizedKeys: ssh-ed25519 AAAAexample builder
+    template: worker.yaml
+    asserts:
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/keys"]
+          pattern: '^[a-f0-9]{64}$'
+  - it: mounts an externally managed key secret
+    set:
+      ssh.existingSecret: builder-keys
+    template: worker.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[2].secret.secretName
+          value: builder-keys
+      - notExists:
+          path: spec.template.metadata.annotations["checksum/keys"]
   - it: routes clients through activator
     template: service.yaml
     documentIndex: 0

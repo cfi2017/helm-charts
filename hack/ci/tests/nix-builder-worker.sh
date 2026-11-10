@@ -13,14 +13,18 @@ cleanup() {
   rm -rf "$test_dir"
 }
 trap cleanup EXIT
-mkdir -p "$test_dir/config" "$test_dir/keys"
+mkdir -p "$test_dir/config" "$test_dir/keys/..projected"
 cp charts/nix-builder/files/{worker.sh,sshd_config} "$test_dir/config/"
 printf 'sandbox = false\nexperimental-features = nix-command flakes\nsubstituters =\n' > "$test_dir/config/nix.conf"
 ssh-keygen -q -t ed25519 -N '' -f "$test_dir/keys/id_ed25519"
-cp "$test_dir/keys/id_ed25519.pub" "$test_dir/keys/authorized_keys"
-# Files are mounted read-only; the container runs as root, like the chart worker.
-chmod 755 "$test_dir" "$test_dir/config" "$test_dir/keys"
-sudo chown root:root "$test_dir/keys" "$test_dir/keys/authorized_keys"
+cp "$test_dir/keys/id_ed25519.pub" "$test_dir/keys/..projected/authorized_keys"
+ln -s ..projected/authorized_keys "$test_dir/keys/authorized_keys"
+# Reproduce Kubernetes Secret projection: a 0777 directory, symlinked key and
+# root-owned 0400 key file. Direct AuthorizedKeysFile access must reject this.
+chmod 755 "$test_dir" "$test_dir/config" "$test_dir/keys/..projected"
+chmod 777 "$test_dir/keys"
+chmod 400 "$test_dir/keys/..projected/authorized_keys"
+sudo chown root:root "$test_dir/keys" "$test_dir/keys/..projected" "$test_dir/keys/..projected/authorized_keys"
 docker volume create "$volume" >/dev/null
 # Repeat initialization to exercise reuse of a populated store database.
 for attempt in 1 2; do
@@ -38,6 +42,9 @@ for attempt in $(seq 1 30); do
   if docker exec "$worker" /bin/sh -c 'test -s /run/sshd.pid'; then break; fi
   sleep 1
 done
+[[ "$(docker exec "$worker" stat -c '%a' /keys)" == 777 ]]
+[[ "$(docker exec "$worker" stat -c '%u:%g:%a' /run/sshd)" == 0:0:700 ]]
+[[ "$(docker exec "$worker" stat -c '%u:%g:%a' /run/sshd/authorized_keys)" == 0:0:600 ]]
 # Use another Nix container as the client, sharing only the worker's network.
 output=$(docker run --rm --network "container:$worker" --entrypoint /bin/sh \
   -v "$test_dir/keys:/keys:ro" \
