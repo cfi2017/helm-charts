@@ -19,7 +19,7 @@ jobs:
     - name: Set up Helm
       uses: azure/setup-helm@v5
       with:
-        version: v3.17.4
+        version: v3.22.1
 
     - name: install helm unittest
       env:
@@ -61,7 +61,7 @@ jobs:
       - name: Set up Helm
         uses: azure/setup-helm@v5
         with:
-          version: v3.17.4
+          version: v3.22.1
 
       - name: install helm unittest
         env:
