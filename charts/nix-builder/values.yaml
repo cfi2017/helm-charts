@@ -2,7 +2,7 @@ nameOverride: ""
 fullnameOverride: ""
 image:
   repository: nixos/nix
-  tag: "2.24.14"
+  tag: "2.35.6"
   pullPolicy: IfNotPresent
 imagePullSecrets: []
 ssh:
