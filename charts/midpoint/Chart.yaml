@@ -7,7 +7,7 @@ appVersion: 4.10-alpine
 dependencies:
   - name: postgres
     alias: postgresql
-    version: "0.11.5"
+    version: "0.22.0"
     repository: oci://registry-1.docker.io/cloudpirates
     condition: postgresql.enabled
 deprecated: false
