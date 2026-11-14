@@ -6,7 +6,7 @@ apiVersion: v2
 appVersion: 1.0.1
 dependencies:
   - name: redis
-    version: "0.13.4"
+    version: "0.39.0"
     repository: oci://registry-1.docker.io/cloudpirates
     condition: redis.enabled
   - name: postgres
