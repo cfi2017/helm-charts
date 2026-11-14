@@ -32,7 +32,7 @@ scaleToZero:
   idleSeconds: 300
   startupTimeoutSeconds: 600
   # One proxy replica is required to track all active connections.
-  image: python:3.13-alpine
+  image: python:3.15-alpine
   resources:
     requests:
       cpu: 10m
