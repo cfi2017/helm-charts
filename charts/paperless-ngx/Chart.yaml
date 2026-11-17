@@ -23,7 +23,7 @@ annotations:
       url: https://cfi2017.github.io/helm-charts
 dependencies:
   - name: valkey
-    version: "0.14.0"
+    version: "0.26.1"
     repository: oci://registry-1.docker.io/cloudpirates
     condition: valkey.enabled
   - name: postgres
